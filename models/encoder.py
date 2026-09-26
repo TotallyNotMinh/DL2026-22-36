@@ -32,7 +32,7 @@ class PatchEmbedder(nn.Module):
         tok = self.positional_dropout((patch + pe)).flatten(2).transpose(1, 2)
         return tok
 
-class ASTTransformerEncoder(nn.Module):
+class TransformerEncoder(nn.Module):
     def __init__(self, tok_dim, num_head, num_layer, dropout=0.1):
         super().__init__()
 
@@ -42,11 +42,11 @@ class ASTTransformerEncoder(nn.Module):
     def forward(self, x):
         return self.encoder(x)
 
-class AST(nn.Module):
+class ASTEncoder(nn.Module):
     def __init__(self, tok_dim=768, c_in=1, overlap=6, patch_size=16, size=(128, 500), num_head=8, num_layer=12, num_class=20):
         super().__init__()
         self.patch_embedder = PatchEmbedder(tok_dim=tok_dim, c_in=c_in, overlap=overlap, patch_size=patch_size, size=size)
-        self.transformer_encoder = ASTTransformerEncoder(tok_dim=tok_dim, num_head=num_head, num_layer=num_layer)
+        self.transformer_encoder = TransformerEncoder(tok_dim=tok_dim, num_head=num_head, num_layer=num_layer)
 
     def forward(self, x):
         tokens = self.patch_embedder(x) # (B, 588, 768)
