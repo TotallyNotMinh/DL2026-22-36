@@ -46,23 +46,18 @@ class DenoisingDecoder(nn.Module):
     def forward(self, features: torch.Tensor):
         B = features.shape[0]
         features = features.transpose(1, 2).view((B, self.tok_dim, self.H_patch, self.W_patch))
-        print(f"Input shape: {features.shape}")
 
         dec1 = self.dec1(features)
         dec1 = F.interpolate(dec1, scale_factor=2, mode="bilinear", align_corners=False)
-        print(f"dec1 output shape: {dec1.shape}")
 
         dec2 = self.dec2(dec1)
         dec2 = F.interpolate(dec2, scale_factor=2, mode="bilinear", align_corners=False)
-        print(f"dec2 output shape: {dec2.shape}")
 
         dec3 = self.dec3(dec2)
         dec3 = F.interpolate(dec3, scale_factor=2, mode="bilinear", align_corners=False)
-        print(f"dec3 output shape: {dec3.shape}")
 
         dec4 = self.dec4(dec3)
         dec4 = F.interpolate(dec4, scale_factor=2, mode="bilinear", align_corners=False)
-        print(f"dec4 output shape: {dec4.shape}")
 
         output = F.interpolate(dec4, (self.H, self.W), mode="bilinear", align_corners=False)
 
