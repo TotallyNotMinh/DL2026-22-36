@@ -9,6 +9,8 @@ import torchaudio
 import torchaudio.functional as AF
 import torchaudio.transforms as T
 
+from data.augment import SpecAugment, mixup_samples
+
 
 class ACADDataset(Dataset):
     """
@@ -42,6 +44,13 @@ class ACADDataset(Dataset):
         scenes=None,
         mock=False,
         mock_length=256,
+        use_augment=True,
+        freq_mask_param=24,
+        time_mask_param=48,
+        num_freq_masks=2,
+        num_time_masks=2,
+        mixup_alpha=0.5,
+        mixup_prob=0.5,
     ):
         super().__init__()
         self.root_dir = Path(root_dir)
@@ -53,6 +62,9 @@ class ACADDataset(Dataset):
         self.scenes = scenes
         self.mock = mock
         self.mock_length = mock_length
+        self.use_augment = use_augment and (self.split == "train")
+        self.mixup_alpha = mixup_alpha
+        self.mixup_prob = mixup_prob
 
         self.mel_transform = T.MelSpectrogram(
             sample_rate=sample_rate,
@@ -63,6 +75,13 @@ class ACADDataset(Dataset):
             center=True,
             power=2.0,
         )
+
+        self.spec_augment = SpecAugment(
+            freq_mask_param=freq_mask_param,
+            time_mask_param=time_mask_param,
+            num_freq_masks=num_freq_masks,
+            num_time_masks=num_time_masks,
+        ) if self.use_augment else None
 
         if not self.mock:
             self.samples = self._index_samples()
@@ -150,7 +169,7 @@ class ACADDataset(Dataset):
             return self.mock_length
         return len(self.samples)
 
-    def __getitem__(self, idx):
+    def _get_raw_item(self, idx):
         if self.mock:
             clean_mel = torch.randn(1, 128, self.target_frames)
             noisy_mel = clean_mel + 0.1 * torch.randn(1, 128, self.target_frames)
@@ -192,6 +211,24 @@ class ACADDataset(Dataset):
 
         return noisy_mel, clean_mel
 
+    def __getitem__(self, idx):
+        noisy_mel, clean_mel = self._get_raw_item(idx)
+
+        if self.use_augment and self.spec_augment is not None:
+            total_items = self.mock_length if self.mock else len(self.samples)
+            if self.mixup_prob > 0.0 and random.random() < self.mixup_prob and total_items > 1:
+                idx2 = random.randint(0, total_items - 2)
+                if idx2 >= idx:
+                    idx2 += 1
+                noisy2, clean2 = self._get_raw_item(idx2)
+                noisy_mel, clean_mel = mixup_samples(
+                    noisy_mel, clean_mel, noisy2, clean2, alpha=self.mixup_alpha
+                )
+
+            noisy_mel = self.spec_augment(noisy_mel)
+
+        return noisy_mel, clean_mel
+
 
 class FSD50KDataset(Dataset):
     """
@@ -220,6 +257,13 @@ class FSD50KDataset(Dataset):
         mock=False,
         mock_length=256,
         num_classes=200,
+        use_augment=True,
+        freq_mask_param=24,
+        time_mask_param=48,
+        num_freq_masks=2,
+        num_time_masks=2,
+        mixup_alpha=0.5,
+        mixup_prob=0.5,
     ):
         super().__init__()
         self.root_dir = Path(root_dir)
@@ -231,6 +275,9 @@ class FSD50KDataset(Dataset):
         self.mock = mock
         self.mock_length = mock_length
         self.num_classes = num_classes
+        self.use_augment = use_augment and (self.split == "train")
+        self.mixup_alpha = mixup_alpha
+        self.mixup_prob = mixup_prob
 
         self.mel_transform = T.MelSpectrogram(
             sample_rate=sample_rate,
@@ -241,6 +288,13 @@ class FSD50KDataset(Dataset):
             center=True,
             power=2.0,
         )
+
+        self.spec_augment = SpecAugment(
+            freq_mask_param=freq_mask_param,
+            time_mask_param=time_mask_param,
+            num_freq_masks=num_freq_masks,
+            num_time_masks=num_time_masks,
+        ) if self.use_augment else None
 
         if not self.mock:
             self.label_to_idx, self.idx_to_label = self._load_vocabulary()
@@ -384,7 +438,7 @@ class FSD50KDataset(Dataset):
             return self.mock_length
         return len(self.samples)
 
-    def __getitem__(self, idx):
+    def _get_raw_item(self, idx):
         if self.mock:
             mel = torch.randn(1, 128, self.target_frames)
             target = torch.zeros(self.num_classes, dtype=torch.float32)
@@ -405,5 +459,23 @@ class FSD50KDataset(Dataset):
         for label in labels:
             if label in self.label_to_idx:
                 target[self.label_to_idx[label]] = 1.0
+
+        return mel, target
+
+    def __getitem__(self, idx):
+        mel, target = self._get_raw_item(idx)
+
+        if self.use_augment and self.spec_augment is not None:
+            total_items = self.mock_length if self.mock else len(self.samples)
+            if self.mixup_prob > 0.0 and random.random() < self.mixup_prob and total_items > 1:
+                idx2 = random.randint(0, total_items - 2)
+                if idx2 >= idx:
+                    idx2 += 1
+                mel2, target2 = self._get_raw_item(idx2)
+                mel, target = mixup_samples(
+                    mel, target, mel2, target2, alpha=self.mixup_alpha
+                )
+
+            mel = self.spec_augment(mel)
 
         return mel, target

@@ -34,6 +34,11 @@ parser.add_argument("--num-workers", type=int, default=4, help="DataLoader worke
 parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
 parser.add_argument("--val-interval", type=int, default=1, help="Validation frequency (in epochs)")
 parser.add_argument("--mock", action="store_true", help="Use synthetic mock data for testing/benchmarking")
+parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment and Mixup)")
+parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequency mask parameter")
+parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
+parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup alpha parameter")
+parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
 
 args = parser.parse_args()
 
@@ -129,7 +134,16 @@ def train():
     crit_mse = nn.MSELoss().to(device)
 
     # ============== Datasets & Distributed Samplers ==============
-    train_dataset = ACADDataset(root_dir=args.data_path, split="train", mock=args.mock)
+    train_dataset = ACADDataset(
+        root_dir=args.data_path,
+        split="train",
+        mock=args.mock,
+        use_augment=not args.no_augment,
+        freq_mask_param=args.freq_mask,
+        time_mask_param=args.time_mask,
+        mixup_alpha=args.mixup_alpha,
+        mixup_prob=args.mixup_prob,
+    )
     val_dataset = ACADDataset(root_dir=args.data_path, split="val", mock=args.mock)
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True, drop_last=False) if is_distributed else None

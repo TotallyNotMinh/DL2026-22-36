@@ -31,13 +31,18 @@ parser.add_argument("--seed", type=int, default=42, help="Random seed for reprod
 parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
 parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs")
-parser.add_argument("--encoder-lr", type=float, default=5e-5, help="Backbone encoder learning rate")
-parser.add_argument("--head-lr", type=float, default=5e-4, help="Classifier head learning rate")
-parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay")
+parser.add_argument("--encoder-lr", type=float, default=2e-4, help="Backbone encoder learning rate")
+parser.add_argument("--head-lr", type=float, default=2e-4, help="Classifier head learning rate")
+parser.add_argument("--weight-decay", type=float, default=1e-3, help="Weight decay")
 parser.add_argument("--num-workers", type=int, default=4, help="DataLoader workers per GPU")
 parser.add_argument("--patience", type=int, default=15, help="Early stopping patience")
 parser.add_argument("--val-interval", type=int, default=1, help="Validation frequency (in epochs)")
 parser.add_argument("--mock", action="store_true", help="Use synthetic mock data for testing/benchmarking")
+parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment and Mixup)")
+parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequency mask parameter")
+parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
+parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
+parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
 
 args = parser.parse_args()
 
@@ -168,7 +173,17 @@ def train():
     criterion = nn.BCEWithLogitsLoss().to(device)
 
     # ============== Datasets & Loaders ==============
-    train_dataset = FSD50KDataset(root_dir=args.data_path, split="train", mock=args.mock, num_classes=NUM_CLASSES)
+    train_dataset = FSD50KDataset(
+        root_dir=args.data_path,
+        split="train",
+        mock=args.mock,
+        num_classes=NUM_CLASSES,
+        use_augment=not args.no_augment,
+        freq_mask_param=args.freq_mask,
+        time_mask_param=args.time_mask,
+        mixup_alpha=args.mixup_alpha,
+        mixup_prob=args.mixup_prob,
+    )
     val_dataset = FSD50KDataset(root_dir=args.data_path, split="val", mock=args.mock, num_classes=NUM_CLASSES)
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True, drop_last=False) if is_distributed else None

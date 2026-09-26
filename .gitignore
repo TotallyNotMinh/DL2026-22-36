@@ -3,3 +3,5 @@
 /data/*
 
 !/data/dataset.py
+!/data/augment.py
+/checkpoints/
