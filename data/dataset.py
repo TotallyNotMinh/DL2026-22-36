@@ -1,4 +1,5 @@
 import os
+import csv
 import random
 from pathlib import Path
 import torch
@@ -190,3 +191,219 @@ class ACADDataset(Dataset):
         clean_mel = self._waveform_to_log_mel(clean_wave)
 
         return noisy_mel, clean_mel
+
+
+class FSD50KDataset(Dataset):
+    """
+    Dataset for FSD50K multi-label sound event classification.
+    Matches the Kaggle `yousirui1/fsd50k` dataset directory structure:
+
+      root_dir/
+      ├── FSD50K.ground_truth/
+      │   ├── dev.csv              <-- fname, labels, mids, split ("train" / "val")
+      │   ├── eval.csv             <-- fname, labels, mids ("eval" / "test")
+      │   └── vocabulary.csv       <-- class index, label name, mid
+      ├── FSD50K.dev_audio_16k/    <-- (or FSD50K.dev_audio / FSD50K.dev)
+      └── FSD50K.eval_audio_16k/   <-- (or FSD50K.eval_audio / FSD50K.eval)
+    """
+    def __init__(
+        self,
+        root_dir="data/fsd50k",
+        split="train",
+        sample_rate=16000,
+        duration_sec=5.0,
+        n_mels=128,
+        n_fft=1024,
+        win_length=400,
+        hop_length=160,
+        target_frames=500,
+        mock=False,
+        mock_length=256,
+        num_classes=200,
+    ):
+        super().__init__()
+        self.root_dir = Path(root_dir)
+        self.split = split.lower()
+        self.sample_rate = sample_rate
+        self.duration_sec = duration_sec
+        self.target_len = int(sample_rate * duration_sec)
+        self.target_frames = target_frames
+        self.mock = mock
+        self.mock_length = mock_length
+        self.num_classes = num_classes
+
+        self.mel_transform = T.MelSpectrogram(
+            sample_rate=sample_rate,
+            n_fft=n_fft,
+            win_length=win_length,
+            hop_length=hop_length,
+            n_mels=n_mels,
+            center=True,
+            power=2.0,
+        )
+
+        if not self.mock:
+            self.label_to_idx, self.idx_to_label = self._load_vocabulary()
+            self.samples = self._load_samples()
+        else:
+            self.label_to_idx = {f"class_{i}": i for i in range(num_classes)}
+            self.idx_to_label = {i: f"class_{i}" for i in range(num_classes)}
+            self.samples = []
+
+    def _find_dir(self, candidate_names):
+        for name in candidate_names:
+            p = self.root_dir / name
+            if p.is_dir():
+                return p
+        return None
+
+    def _load_vocabulary(self):
+        gt_dir = self._find_dir(["FSD50K.ground_truth", "ground_truth", "metadata"])
+        vocab_file = None
+        if gt_dir:
+            v_cand = gt_dir / "vocabulary.csv"
+            if v_cand.is_file():
+                vocab_file = v_cand
+
+        if vocab_file is None:
+            v_cand = self.root_dir / "vocabulary.csv"
+            if v_cand.is_file():
+                vocab_file = v_cand
+
+        label_to_idx = {}
+        idx_to_label = {}
+
+        if vocab_file and vocab_file.is_file():
+            with open(vocab_file, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if not row:
+                        continue
+                    try:
+                        idx = int(row[0].strip())
+                        label = row[1].strip()
+                    except ValueError:
+                        try:
+                            idx = int(row[1].strip())
+                            label = row[0].strip()
+                        except ValueError:
+                            continue
+                    label_to_idx[label] = idx
+                    idx_to_label[idx] = label
+
+        return label_to_idx, idx_to_label
+
+    def _load_samples(self):
+        gt_dir = self._find_dir(["FSD50K.ground_truth", "ground_truth", "metadata"])
+        if gt_dir is None:
+            gt_dir = self.root_dir
+
+        is_eval_split = self.split in ["eval", "test"]
+        csv_name = "eval.csv" if is_eval_split else "dev.csv"
+        csv_path = gt_dir / csv_name
+        if not csv_path.is_file():
+            csv_path = self.root_dir / csv_name
+
+        if not csv_path.is_file():
+            return []
+
+        if is_eval_split:
+            audio_dir = self._find_dir([
+                "FSD50K.eval_audio_16k",
+                "FSD50K.eval_audio",
+                "FSD50K.eval",
+                "eval_audio",
+                "eval"
+            ])
+        else:
+            audio_dir = self._find_dir([
+                "FSD50K.dev_audio_16k",
+                "FSD50K.dev_audio",
+                "FSD50K.dev",
+                "dev_audio",
+                "dev"
+            ])
+
+        samples = []
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if not is_eval_split and "split" in row:
+                    row_split = row["split"].strip().lower()
+                    if row_split != self.split:
+                        continue
+
+                fname = row["fname"].strip()
+                labels_str = row.get("labels", "").strip()
+                label_list = [l.strip() for l in labels_str.split(",") if l.strip()]
+
+                if audio_dir:
+                    audio_path = audio_dir / f"{fname}.wav"
+                else:
+                    audio_path = self.root_dir / f"{fname}.wav"
+
+                samples.append((str(audio_path), label_list))
+
+        return samples
+
+    def _load_and_crop_audio(self, file_path):
+        waveform, sr = torchaudio.load(file_path)
+
+        if waveform.ndim == 2 and waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
+        elif waveform.ndim == 1:
+            waveform = waveform.unsqueeze(0)
+
+        if sr != self.sample_rate:
+            waveform = AF.resample(waveform, orig_freq=sr, new_freq=self.sample_rate)
+
+        length = waveform.shape[-1]
+        if length > self.target_len:
+            if self.split == "train":
+                max_start = length - self.target_len
+                start = random.randint(0, max_start)
+            else:
+                start = (length - self.target_len) // 2
+            waveform = waveform[..., start : start + self.target_len]
+        elif length < self.target_len:
+            pad = self.target_len - length
+            waveform = F.pad(waveform, (0, pad))
+
+        mel = self.mel_transform(waveform)
+        log_mel = torch.log(mel.clamp(min=1e-6))
+
+        if log_mel.shape[-1] > self.target_frames:
+            log_mel = log_mel[..., :self.target_frames]
+        elif log_mel.shape[-1] < self.target_frames:
+            log_mel = F.pad(log_mel, (0, self.target_frames - log_mel.shape[-1]))
+
+        return log_mel
+
+    def __len__(self):
+        if self.mock:
+            return self.mock_length
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        if self.mock:
+            mel = torch.randn(1, 128, self.target_frames)
+            target = torch.zeros(self.num_classes, dtype=torch.float32)
+            active_classes = torch.randint(0, self.num_classes, (random.randint(1, 3),))
+            target[active_classes] = 1.0
+            return mel, target
+
+        if not self.samples:
+            raise FileNotFoundError(
+                f"No FSD50K samples found for split '{self.split}' in '{self.root_dir}'. "
+                "Ensure ground truth CSVs and audio directories are extracted matching yousirui1/fsd50k."
+            )
+
+        audio_path, labels = self.samples[idx]
+        mel = self._load_and_crop_audio(audio_path)
+
+        target = torch.zeros(self.num_classes, dtype=torch.float32)
+        for label in labels:
+            if label in self.label_to_idx:
+                target[self.label_to_idx[label]] = 1.0
+
+        return mel, target
