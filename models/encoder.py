@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torchinfo import summary
+import warnings
 
 class PatchEmbedder(nn.Module):
     def __init__(self, tok_dim, c_in, overlap, patch_size, size):
@@ -37,6 +38,12 @@ class TransformerEncoder(nn.Module):
         super().__init__()
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=tok_dim, nhead=num_head, dropout=dropout, batch_first=True, norm_first=True)
+
+        warnings.filterwarnings(
+            "ignore",
+            message="enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True"
+        )
+
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layer)
 
     def forward(self, x):
@@ -55,5 +62,5 @@ class ASTEncoder(nn.Module):
 
 if __name__ == "__main__":
     x = torch.rand([1, 1, 128, 500], device="cuda")
-    model = AST().to(device="cuda")
+    model = ASTEncoder().to(device="cuda")
     summary(model, input_size=(1, 1, 128, 500))
