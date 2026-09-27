@@ -178,6 +178,7 @@ class DINOVisionTransformer(nn.Module):
                 if k.startswith("blocks.") or k.startswith("norm.")
             }
             self.load_state_dict(block_and_norm_state, strict=False)
+            print("Successfully loaded and adapted pretrained Meta DINO ViT-Base weights.")
 
     def forward(self, x):
         tokens = self.patch_embedder(x)  # (B, 588, 768)

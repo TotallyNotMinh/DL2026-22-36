@@ -223,6 +223,7 @@ def train():
         print(f"  • Device:                 {device} (world size: {world_size})")
         print(f"  • Total samples:          {len(train_dataset)} train, {len(val_dataset)} val")
         print(f"  • Effective batch size:   {BATCH_SIZE * world_size * args.grad_accum_steps}")
+        print(f"  • Pretrained Backbone:    {'DINO ViT-Base (pretrained)' if not args.no_dino else 'Random init'}")
         print(f"  • Learning rates:         Encoder={args.encoder_lr}, Decoder={args.decoder_lr}")
 
     # ============== Training and Validation Loop ==============

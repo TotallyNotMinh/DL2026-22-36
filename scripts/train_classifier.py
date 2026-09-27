@@ -68,7 +68,12 @@ def load_pretrained_encoder_weights(model, pretrained_path, device, is_main=True
     """
     if pretrained_path is None or not os.path.isfile(pretrained_path):
         if is_main:
-            print("No pretrained encoder specified. Training classifier from random initialization.")
+            raw_model = model.module if hasattr(model, "module") else model
+            has_dino = getattr(raw_model.encoder, "use_dino", False) if hasattr(raw_model, "encoder") else False
+            if has_dino:
+                print("No custom checkpoint specified; using pretrained DINO ViT-Base encoder.")
+            else:
+                print("No pretrained encoder specified. Training classifier from random initialization.")
         return
 
     checkpoint = torch.load(pretrained_path, map_location=device)
@@ -278,7 +283,8 @@ def train():
         print(f"  • Device:                 {device} (world size: {world_size})")
         print(f"  • Total samples:          {len(train_dataset)} train, {len(val_dataset)} val")
         print(f"  • Effective batch size:   {BATCH_SIZE * world_size * args.grad_accum_steps}")
-        print(f"  • Pretrained Backbone:    {args.pretrained_encoder if args.pretrained_encoder else 'Random init'}")
+        backbone_desc = args.pretrained_encoder if args.pretrained_encoder else ("DINO ViT-Base (pretrained)" if not args.no_dino else "Random init")
+        print(f"  • Pretrained Backbone:    {backbone_desc}")
         print(f"  • Encoder Frozen:         {args.freeze_encoder}")
 
     # ============== Training and Validation Loop ==============
