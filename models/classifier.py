@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
+
+# Add project root
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import torch
 import torch.nn as nn
 from models.encoder import ASTEncoder
-
+from torchinfo import summary
 
 class Classifer(nn.Module):
     """
@@ -17,9 +23,11 @@ class Classifer(nn.Module):
         overlap=6,
         patch_size=16,
         size=(128, 500),
-        num_head=8,
+        num_head=12,
         num_layer=12,
         dropout=0.1,
+        use_dino=True,
+        pretrained_dino=True,
     ):
         super().__init__()
         self.encoder = ASTEncoder(
@@ -30,6 +38,8 @@ class Classifer(nn.Module):
             size=size,
             num_head=num_head,
             num_layer=num_layer,
+            use_dino=use_dino,
+            pretrained_dino=pretrained_dino,
         )
         self.dropout = nn.Dropout(dropout)
         self.head = nn.Linear(tok_dim, num_classes)
@@ -41,3 +51,10 @@ class Classifer(nn.Module):
         pooled = self.dropout(pooled)
         logits = self.head(pooled)        # (B, num_classes)
         return logits
+
+
+if __name__ == "__main__":
+    x = torch.rand([1, 1, 128, 500], device="cuda")
+    model = Classifer().to(device="cuda")
+    print(model(x).shape)
+    summary(model, [1, 1, 128, 500])
