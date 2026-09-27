@@ -43,6 +43,7 @@ parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequ
 parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
 parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
 parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
+parser.add_argument("--no-dino", action="store_true", help="Disable DINO ViT-Base pretraining initialization")
 
 args = parser.parse_args()
 
@@ -216,8 +217,9 @@ def train():
         overlap=6,
         patch_size=16,
         size=(128, 500),
-        num_head=8,
+        num_head=12,
         num_layer=12,
+        pretrained_dino=(not args.no_dino and args.pretrained_encoder is None),
     ).to(device)
 
     # Load pretrained encoder weights if supplied
