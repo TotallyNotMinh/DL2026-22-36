@@ -31,7 +31,7 @@ parser.add_argument("--seed", type=int, default=42, help="Random seed for reprod
 parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
 parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs")
-parser.add_argument("--encoder-lr", type=float, default=2e-4, help="Backbone encoder learning rate")
+parser.add_argument("--encoder-lr", type=float, default=2e-5, help="Backbone encoder learning rate")
 parser.add_argument("--head-lr", type=float, default=2e-4, help="Classifier head learning rate")
 parser.add_argument("--weight-decay", type=float, default=1e-3, help="Weight decay")
 parser.add_argument("--num-workers", type=int, default=4, help="DataLoader workers per GPU")
@@ -42,8 +42,14 @@ parser.add_argument("--no-augment", action="store_true", help="Disable data augm
 parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequency mask parameter")
 parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
 parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
-parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
-parser.add_argument("--no-dino", action="store_true", help="Disable DINO ViT-Base pretraining initialization")
+parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
+parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
+
+ARCH_CONFIGS = {
+    "tiny": {"tok_dim": 192, "num_head": 3, "num_layer": 12, "name": "DeiT ViT-Tiny"},
+    "small": {"tok_dim": 384, "num_head": 6, "num_layer": 12, "name": "DeiT ViT-Small"},
+    "base": {"tok_dim": 768, "num_head": 12, "num_layer": 12, "name": "DeiT ViT-Base"},
+}
 
 args = parser.parse_args()
 
@@ -61,7 +67,7 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-def load_pretrained_encoder_weights(model, pretrained_path, device, is_main=True):
+def load_pretrained_encoder_weights(model, pretrained_path, device, arch_name="ViT", is_main=True):
     """
     Extracts and loads pretrained ASTEncoder weights from a Denoiser pretraining checkpoint
     or an earlier AST checkpoint, cleanly discarding unused decoder/head parameters.
@@ -71,7 +77,7 @@ def load_pretrained_encoder_weights(model, pretrained_path, device, is_main=True
             raw_model = model.module if hasattr(model, "module") else model
             has_dino = getattr(raw_model.encoder, "use_dino", False) if hasattr(raw_model, "encoder") else False
             if has_dino:
-                print("No custom checkpoint specified; using pretrained DINO ViT-Base encoder.")
+                print(f"No custom checkpoint specified; using pretrained {arch_name} encoder.")
             else:
                 print("No pretrained encoder specified. Training classifier from random initialization.")
         return
@@ -215,20 +221,21 @@ def train():
     ) if is_main else None
 
     # ============== Model Initialization ==============
+    arch_cfg = ARCH_CONFIGS[args.arch]
     model = Classifer(
-        tok_dim=768,
+        tok_dim=arch_cfg["tok_dim"],
         num_classes=NUM_CLASSES,
         c_in=1,
         overlap=6,
         patch_size=16,
         size=(128, 500),
-        num_head=12,
-        num_layer=12,
+        num_head=arch_cfg["num_head"],
+        num_layer=arch_cfg["num_layer"],
         pretrained_dino=(not args.no_dino and args.pretrained_encoder is None),
     ).to(device)
 
     # Load pretrained encoder weights if supplied
-    load_pretrained_encoder_weights(model, args.pretrained_encoder, device, is_main=is_main)
+    load_pretrained_encoder_weights(model, args.pretrained_encoder, device, arch_name=arch_cfg["name"], is_main=is_main)
 
     # Freeze encoder parameters if linear probe requested
     raw_model = model.module if hasattr(model, "module") else model
@@ -283,7 +290,8 @@ def train():
         print(f"  • Device:                 {device} (world size: {world_size})")
         print(f"  • Total samples:          {len(train_dataset)} train, {len(val_dataset)} val")
         print(f"  • Effective batch size:   {BATCH_SIZE * world_size * args.grad_accum_steps}")
-        backbone_desc = args.pretrained_encoder if args.pretrained_encoder else ("DINO ViT-Base (pretrained)" if not args.no_dino else "Random init")
+        backbone_desc = args.pretrained_encoder if args.pretrained_encoder else (f"{arch_cfg['name']} (pretrained)" if not args.no_dino else "Random init")
+        print(f"  • Architecture:           ViT-{args.arch.capitalize()} ({arch_cfg['name']})")
         print(f"  • Pretrained Backbone:    {backbone_desc}")
         print(f"  • Encoder Frozen:         {args.freeze_encoder}")
 

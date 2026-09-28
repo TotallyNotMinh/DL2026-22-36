@@ -100,19 +100,26 @@ class Block(nn.Module):
 
 
 class DINOVisionTransformer(nn.Module):
+    PRETRAINED_URLS = {
+        192: "https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth",
+        384: "https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth",
+        768: "https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth",
+    }
+
     def __init__(
         self,
-        tok_dim: int = 768,
+        tok_dim: int = 192,
         c_in: int = 1,
         overlap: int = 6,
         patch_size: int = 16,
         size=(128, 500),
         depth: int = 12,
-        num_heads: int = 12,
+        num_heads: int = 3,
         mlp_ratio: float = 4.0,
         pretrained: bool = True,
         drop_rate: float = 0.0,
         attn_drop_rate: float = 0.0,
+        pretrained_url: str = None,
     ):
         super().__init__()
         self.tok_dim = tok_dim
@@ -142,27 +149,42 @@ class DINOVisionTransformer(nn.Module):
         self.norm = nn.LayerNorm(tok_dim, eps=1e-6)
 
         if pretrained:
-            self.load_pretrained_dino_weights()
+            self.load_pretrained_dino_weights(url=pretrained_url)
 
     def load_pretrained_dino_weights(
         self,
-        url: str = "https://dl.fbaipublicfiles.com/dino/dino_vitbase16_pretrain/dino_vitbase16_pretrain.pth",
+        url: str = None,
         map_location: str = "cpu",
     ):
+        if url is None:
+            url = self.PRETRAINED_URLS.get(self.tok_dim)
+            if url is None:
+                raise ValueError(
+                    f"No default pretrained weights for tok_dim={self.tok_dim}. "
+                    f"Available default dims: {list(self.PRETRAINED_URLS.keys())} or specify custom url."
+                )
+
         state_dict = torch.hub.load_state_dict_from_url(url, map_location=map_location)
+        if "model" in state_dict:
+            state_dict = state_dict["model"]
+
         with torch.no_grad():
             # 1. Adapt 3-channel patch projection weights to 1-channel spectrogram
             if "patch_embed.proj.weight" in state_dict:
-                w_3ch = state_dict["patch_embed.proj.weight"]  # (768, 3, 16, 16)
-                w_1ch = w_3ch.mean(dim=1, keepdim=True)        # (768, 1, 16, 16)
+                w_3ch = state_dict["patch_embed.proj.weight"]
+                w_1ch = w_3ch.mean(dim=1, keepdim=True)
                 self.patch_embedder.patch_embedder.weight.copy_(w_1ch)
             if "patch_embed.proj.bias" in state_dict and self.patch_embedder.patch_embedder.bias is not None:
                 self.patch_embedder.patch_embedder.bias.copy_(state_dict["patch_embed.proj.bias"])
 
             # 2. Interpolate 2D positional embeddings from (14, 14) to (H_out, W_out)
             if "pos_embed" in state_dict:
-                pos_embed_no_cls = state_dict["pos_embed"][:, 1:, :]  # (1, 196, 768)
-                grid_size = int(math.isqrt(pos_embed_no_cls.shape[1]))  # 14
+                pos_embed = state_dict["pos_embed"]
+                if pos_embed.shape[1] in [197, 14 * 14 + 1]:
+                    pos_embed_no_cls = pos_embed[:, 1:, :]
+                else:
+                    pos_embed_no_cls = pos_embed
+                grid_size = int(math.isqrt(pos_embed_no_cls.shape[1]))
                 pos_grid = pos_embed_no_cls.reshape(1, grid_size, grid_size, self.tok_dim).permute(0, 3, 1, 2)
                 pos_interp = F.interpolate(
                     pos_grid,
@@ -178,7 +200,12 @@ class DINOVisionTransformer(nn.Module):
                 if k.startswith("blocks.") or k.startswith("norm.")
             }
             self.load_state_dict(block_and_norm_state, strict=False)
-            print("Successfully loaded and adapted pretrained Meta DINO ViT-Base weights.")
+            arch_name = {
+                192: "Meta DeiT ViT-Tiny",
+                384: "Meta DeiT ViT-Small",
+                768: "Meta DeiT ViT-Base",
+            }.get(self.tok_dim, f"ViT (tok_dim={self.tok_dim})")
+            print(f"Successfully loaded and adapted pretrained {arch_name} weights.")
 
     def forward(self, x):
         tokens = self.patch_embedder(x)  # (B, 588, 768)
@@ -216,15 +243,16 @@ class TransformerEncoder(nn.Module):
 class ASTEncoder(nn.Module):
     def __init__(
         self,
-        tok_dim: int = 768,
+        tok_dim: int = 192,
         c_in: int = 1,
         overlap: int = 6,
         patch_size: int = 16,
         size=(128, 500),
-        num_head: int = 12,
+        num_head: int = 3,
         num_layer: int = 12,
         use_dino: bool = True,
         pretrained_dino: bool = True,
+        pretrained_url: str = None,
     ):
         super().__init__()
         self.use_dino = use_dino
@@ -238,6 +266,7 @@ class ASTEncoder(nn.Module):
                 depth=num_layer,
                 num_heads=num_head,
                 pretrained=pretrained_dino,
+                pretrained_url=pretrained_url,
             )
         else:
             self.patch_embedder = PatchEmbedder(
