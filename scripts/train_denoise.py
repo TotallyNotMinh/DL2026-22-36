@@ -37,6 +37,8 @@ parser.add_argument("--mock", action="store_true", help="Use synthetic mock data
 parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment and Mixup)")
 parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequency mask parameter")
 parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
+parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup alpha parameter")
+parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
 
