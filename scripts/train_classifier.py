@@ -32,7 +32,7 @@ parser.add_argument("--freeze-encoder", action="store_true", help="Freeze encode
 parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
 parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
-parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs (FSD50K default: 50)")
+parser.add_argument("--num-epoch", type=int, default=30, help="Number of training epochs (FSD50K default: 50)")
 parser.add_argument("--encoder-lr", type=float, default=5e-5, help="Backbone encoder learning rate (AST default: 5e-5)")
 parser.add_argument("--head-lr", type=float, default=5e-5, help="Classifier head learning rate (AST default: 5e-5)")
 parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay")
