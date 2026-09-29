@@ -53,7 +53,7 @@ parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability o
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
 parser.add_argument("--no-cls-dist", action="store_true", help="Disable CLS+DIST dual token pooling (fall back to mean pooling)")
-parser.add_argument("--lr-scheduler", type=str, default="ast_step", choices=["ast_step", "cosine"], help="LR scheduler: ast_step (decay 0.85 after epoch 5) or cosine")
+parser.add_argument("--lr-scheduler", type=str, default="ast_step", choices=["ast_step", "cosine"], help="LR scheduler: ast_step (decay 0.90 after epoch 5) or cosine")
 
 ARCH_CONFIGS = {
     "tiny": {"tok_dim": 192, "num_head": 3, "num_layer": 12, "name": "DeiT ViT-Tiny"},
@@ -304,11 +304,11 @@ def train():
     optimizer = torch.optim.AdamW(param_groups)
 
     if args.lr_scheduler == "ast_step":
-        # AST schedule: keep initial LR for 5 epochs, then decay by 0.85 every epoch
+        # AST schedule: keep initial LR for 5 epochs, then decay by 0.90 every epoch
         def ast_lr_lambda(ep):
             if ep < 5:
                 return 1.0
-            return 0.85 ** (ep - 4)
+            return 0.90 ** (ep - 4)
 
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=ast_lr_lambda)
     else:
