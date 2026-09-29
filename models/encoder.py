@@ -7,7 +7,7 @@ from torchinfo import summary
 
 
 class PatchEmbedder(nn.Module):
-    def __init__(self, tok_dim=768, c_in=1, overlap=6, patch_size=16, size=(128, 500)):
+    def __init__(self, tok_dim=768, c_in=1, overlap=6, patch_size=16, size=(128, 1000)):
         super().__init__()
         (H, W) = size
 
@@ -101,9 +101,9 @@ class Block(nn.Module):
 
 class DINOVisionTransformer(nn.Module):
     PRETRAINED_URLS = {
-        192: "https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth",
-        384: "https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth",
-        768: "https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth",
+        192: "https://dl.fbaipublicfiles.com/deit/deit_tiny_distilled_patch16_224-b40b3cf7.pth",
+        384: "https://dl.fbaipublicfiles.com/deit/deit_small_distilled_patch16_224-649709e9.pth",
+        768: "https://dl.fbaipublicfiles.com/deit/deit_base_distilled_patch16_224-df68dfff.pth",
     }
 
     def __init__(
@@ -112,7 +112,7 @@ class DINOVisionTransformer(nn.Module):
         c_in: int = 1,
         overlap: int = 6,
         patch_size: int = 16,
-        size=(128, 500),
+        size=(128, 1000),
         depth: int = 12,
         num_heads: int = 3,
         mlp_ratio: float = 4.0,
@@ -135,6 +135,12 @@ class DINOVisionTransformer(nn.Module):
             patch_size=patch_size,
             size=size,
         )
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, tok_dim))
+        self.dist_token = nn.Parameter(torch.zeros(1, 1, tok_dim))
+        self.pos_drop = nn.Dropout(p=drop_rate)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+        nn.init.trunc_normal_(self.dist_token, std=0.02)
+
         self.blocks = nn.ModuleList([
             Block(
                 dim=tok_dim,
@@ -172,18 +178,26 @@ class DINOVisionTransformer(nn.Module):
             # 1. Adapt 3-channel patch projection weights to 1-channel spectrogram
             if "patch_embed.proj.weight" in state_dict:
                 w_3ch = state_dict["patch_embed.proj.weight"]
-                w_1ch = w_3ch.mean(dim=1, keepdim=True)
+                # AST sums across channels to preserve filter activation energy
+                w_1ch = w_3ch.sum(dim=1, keepdim=True)
                 self.patch_embedder.patch_embedder.weight.copy_(w_1ch)
             if "patch_embed.proj.bias" in state_dict and self.patch_embedder.patch_embedder.bias is not None:
                 self.patch_embedder.patch_embedder.bias.copy_(state_dict["patch_embed.proj.bias"])
 
-            # 2. Interpolate 2D positional embeddings from (14, 14) to (H_out, W_out)
+            # 2. Extract CLS and DIST tokens if present in pretrained checkpoint
+            if "cls_token" in state_dict:
+                self.cls_token.copy_(state_dict["cls_token"])
+            if "dist_token" in state_dict:
+                self.dist_token.copy_(state_dict["dist_token"])
+
+            # 3. Interpolate 2D positional embeddings from (14, 14) to (H_out, W_out)
             if "pos_embed" in state_dict:
                 pos_embed = state_dict["pos_embed"]
-                if pos_embed.shape[1] in [197, 14 * 14 + 1]:
-                    pos_embed_no_cls = pos_embed[:, 1:, :]
-                else:
-                    pos_embed_no_cls = pos_embed
+                has_dist = ("dist_token" in state_dict) or (pos_embed.shape[1] in [198, 14 * 14 + 2])
+                num_prefix = 2 if has_dist else 1
+                pos_prefix = pos_embed[:, :num_prefix, :]
+                pos_embed_no_cls = pos_embed[:, num_prefix:, :]
+
                 grid_size = int(math.isqrt(pos_embed_no_cls.shape[1]))
                 pos_grid = pos_embed_no_cls.reshape(1, grid_size, grid_size, self.tok_dim).permute(0, 3, 1, 2)
                 pos_interp = F.interpolate(
@@ -194,21 +208,32 @@ class DINOVisionTransformer(nn.Module):
                 )
                 self.patch_embedder.pos_embdder.copy_(pos_interp)
 
-            # 3. Load all 12 blocks and final LayerNorm
+                # Incorporate prefix positional embeddings
+                if hasattr(self, "cls_token") and num_prefix >= 1:
+                    self.cls_token.add_(pos_prefix[:, 0:1, :])
+                if hasattr(self, "dist_token") and num_prefix >= 2:
+                    self.dist_token.add_(pos_prefix[:, 1:2, :])
+
+            # 4. Load all 12 blocks and final LayerNorm
             block_and_norm_state = {
                 k: v for k, v in state_dict.items()
                 if k.startswith("blocks.") or k.startswith("norm.")
             }
             self.load_state_dict(block_and_norm_state, strict=False)
             arch_name = {
-                192: "Meta DeiT ViT-Tiny",
-                384: "Meta DeiT ViT-Small",
-                768: "Meta DeiT ViT-Base",
+                192: "Meta DeiT ViT-Tiny (Distilled)",
+                384: "Meta DeiT ViT-Small (Distilled)",
+                768: "Meta DeiT ViT-Base (Distilled)",
             }.get(self.tok_dim, f"ViT (tok_dim={self.tok_dim})")
             print(f"Successfully loaded and adapted pretrained {arch_name} weights.")
 
     def forward(self, x):
-        tokens = self.patch_embedder(x)  # (B, 588, 768)
+        tokens = self.patch_embedder(x)  # (B, N, tok_dim)
+        B = tokens.shape[0]
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+        dist_tokens = self.dist_token.expand(B, -1, -1)
+        tokens = torch.cat((cls_tokens, dist_tokens, tokens), dim=1)  # (B, 2 + N, tok_dim)
+        tokens = self.pos_drop(tokens)
         for blk in self.blocks:
             tokens = blk(tokens)
         tokens = self.norm(tokens)
@@ -247,7 +272,7 @@ class ASTEncoder(nn.Module):
         c_in: int = 1,
         overlap: int = 6,
         patch_size: int = 16,
-        size=(128, 500),
+        size=(128, 1000),
         num_head: int = 3,
         num_layer: int = 12,
         use_dino: bool = True,

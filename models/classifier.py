@@ -12,7 +12,7 @@ from torchinfo import summary
 class Classifer(nn.Module):
     """
     AST Classifier for FSD50K multi-label sound-event classification.
-    Matching (128, 500) AST spectrogram input and 200 classes.
+    Matching AST spectrogram input and 200 classes.
     """
     def __init__(
         self,
@@ -21,15 +21,17 @@ class Classifer(nn.Module):
         c_in=1,
         overlap=6,
         patch_size=16,
-        size=(128, 500),
+        size=(128, 1000),
         num_head=3,
         num_layer=12,
         dropout=0.1,
         use_dino=True,
         pretrained_dino=True,
         pretrained_url=None,
+        use_cls_dist=True,
     ):
         super().__init__()
+        self.use_cls_dist = use_cls_dist
         self.encoder = ASTEncoder(
             tok_dim=tok_dim,
             c_in=c_in,
@@ -42,13 +44,19 @@ class Classifer(nn.Module):
             pretrained_dino=pretrained_dino,
             pretrained_url=pretrained_url,
         )
+        self.head_norm = nn.LayerNorm(tok_dim, eps=1e-6)
         self.dropout = nn.Dropout(dropout)
         self.head = nn.Linear(tok_dim, num_classes)
 
     def forward(self, x):
-        # x: (B, 1, 128, 500)
-        tokens = self.encoder(x)          # (B, 588, tok_dim)
-        pooled = tokens.mean(dim=1)       # (B, tok_dim) Global Average Pooling
+        # x: (B, 1, 128, target_frames)
+        tokens = self.encoder(x)          # (B, 2 + N, tok_dim)
+        if self.use_cls_dist and tokens.shape[1] >= 2:
+            # Dual-token average from AST (CLS + DIST)
+            pooled = (tokens[:, 0] + tokens[:, 1]) / 2.0
+        else:
+            pooled = tokens[:, 2:].mean(dim=1) if tokens.shape[1] > 2 else tokens.mean(dim=1)
+        pooled = self.head_norm(pooled)
         pooled = self.dropout(pooled)
         logits = self.head(pooled)        # (B, num_classes)
         return logits

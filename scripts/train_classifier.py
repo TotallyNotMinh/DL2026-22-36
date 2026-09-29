@@ -22,7 +22,9 @@ from data.dataset import FSD50KDataset
 from metrics.classification import MultiLabelClassificationMetrics
 
 parser = argparse.ArgumentParser(description="Train AST Classifier on FSD50K multi-label sound events")
-parser.add_argument("--batch-size", type=int, default=32, help="Batch size per GPU")
+parser.add_argument("--batch-size", type=int, default=12, help="Batch size per GPU (AST default: 12)")
+parser.add_argument("--duration-sec", type=float, default=10.0, help="Audio clip duration in seconds (AST default: 10.0)")
+parser.add_argument("--target-frames", type=int, default=1000, help="Target spectrogram frames (AST default: 1000)")
 parser.add_argument("--checkpoint-path", type=str, default=None, help="Resume training checkpoint")
 parser.add_argument("--checkpoint-dir", type=str, default="checkpoints/fsd50k/", help="Directory to save checkpoints")
 parser.add_argument("--pretrained-encoder", type=str, default=None, help="Path to pretrained denoiser/encoder weights")
@@ -30,21 +32,27 @@ parser.add_argument("--freeze-encoder", action="store_true", help="Freeze encode
 parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
 parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
-parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs")
-parser.add_argument("--encoder-lr", type=float, default=2e-5, help="Backbone encoder learning rate")
-parser.add_argument("--head-lr", type=float, default=2e-4, help="Classifier head learning rate")
-parser.add_argument("--weight-decay", type=float, default=1e-3, help="Weight decay")
+parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs (FSD50K default: 50)")
+parser.add_argument("--encoder-lr", type=float, default=5e-5, help="Backbone encoder learning rate (AST default: 5e-5)")
+parser.add_argument("--head-lr", type=float, default=5e-5, help="Classifier head learning rate (AST default: 5e-5)")
+parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay")
 parser.add_argument("--num-workers", type=int, default=4, help="DataLoader workers per GPU")
 parser.add_argument("--patience", type=int, default=15, help="Early stopping patience")
 parser.add_argument("--val-interval", type=int, default=1, help="Validation frequency (in epochs)")
 parser.add_argument("--mock", action="store_true", help="Use synthetic mock data for testing/benchmarking")
-parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment and Mixup)")
-parser.add_argument("--freq-mask", type=int, default=24, help="SpecAugment frequency mask parameter")
-parser.add_argument("--time-mask", type=int, default=48, help="SpecAugment time mask parameter")
+parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment, Mixup, TimeShift, Noise)")
+parser.add_argument("--freq-mask", type=int, default=48, help="SpecAugment frequency mask parameter (AST default: 48)")
+parser.add_argument("--time-mask", type=int, default=192, help="SpecAugment time mask parameter (AST default: 192)")
+parser.add_argument("--time-shift", type=int, default=10, help="Random time shift in frames (CMKD default: 10)")
+parser.add_argument("--noise-level", type=float, default=0.05, help="Spectrogram uniform noise level (CMKD default: 0.05)")
+parser.add_argument("--label-smoothing", type=float, default=0.1, help="BCE label smoothing factor (CMKD default: 0.1)")
+parser.add_argument("--no-class-balancing", action="store_true", help="Disable class-balanced sampling")
 parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
 parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
+parser.add_argument("--no-cls-dist", action="store_true", help="Disable CLS+DIST dual token pooling (fall back to mean pooling)")
+parser.add_argument("--lr-scheduler", type=str, default="ast_step", choices=["ast_step", "cosine"], help="LR scheduler: ast_step (decay 0.85 after epoch 5) or cosine")
 
 ARCH_CONFIGS = {
     "tiny": {"tok_dim": 192, "num_head": 3, "num_layer": 12, "name": "DeiT ViT-Tiny"},
@@ -189,17 +197,40 @@ def train():
     train_dataset = FSD50KDataset(
         root_dir=args.data_path,
         split="train",
+        duration_sec=args.duration_sec,
+        target_frames=args.target_frames,
         mock=args.mock,
         num_classes=NUM_CLASSES,
         use_augment=not args.no_augment,
         freq_mask_param=args.freq_mask,
         time_mask_param=args.time_mask,
+        time_shift_param=args.time_shift,
+        noise_param=args.noise_level,
         mixup_alpha=args.mixup_alpha,
         mixup_prob=args.mixup_prob,
+        normalize=True,
     )
-    val_dataset = FSD50KDataset(root_dir=args.data_path, split="val", mock=args.mock, num_classes=NUM_CLASSES)
+    val_dataset = FSD50KDataset(
+        root_dir=args.data_path,
+        split="val",
+        duration_sec=args.duration_sec,
+        target_frames=args.target_frames,
+        mock=args.mock,
+        num_classes=NUM_CLASSES,
+        normalize=True,
+    )
 
-    train_sampler = DistributedSampler(train_dataset, shuffle=True, drop_last=False) if is_distributed else None
+    if is_distributed:
+        train_sampler = DistributedSampler(train_dataset, shuffle=True, drop_last=False)
+    elif not args.no_class_balancing and not args.mock:
+        sample_weights = train_dataset.get_sample_weights()
+        train_sampler = torch.utils.data.WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True,
+        )
+    else:
+        train_sampler = None
 
     train_loader = DataLoader(
         train_dataset,
@@ -229,10 +260,11 @@ def train():
         c_in=1,
         overlap=6,
         patch_size=16,
-        size=(128, 500),
+        size=(128, args.target_frames),
         num_head=arch_cfg["num_head"],
         num_layer=arch_cfg["num_layer"],
         pretrained_dino=(not args.no_dino and args.pretrained_encoder is None),
+        use_cls_dist=not args.no_cls_dist,
     ).to(device)
 
     # Load pretrained encoder weights if supplied
@@ -260,16 +292,25 @@ def train():
 
     optimizer = torch.optim.AdamW(param_groups)
 
-    warmup_epochs = min(5, max(1, EPOCHS // 10))
-    linear_scheduler = torch.optim.lr_scheduler.LinearLR(
-        optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs
-    )
-    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=max(1, EPOCHS - warmup_epochs), eta_min=1e-6
-    )
-    scheduler = torch.optim.lr_scheduler.SequentialLR(
-        optimizer, schedulers=[linear_scheduler, cosine_scheduler], milestones=[warmup_epochs]
-    )
+    if args.lr_scheduler == "ast_step":
+        # AST schedule: keep initial LR for 5 epochs, then decay by 0.85 every epoch
+        def ast_lr_lambda(ep):
+            if ep < 5:
+                return 1.0
+            return 0.85 ** (ep - 4)
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=ast_lr_lambda)
+    else:
+        warmup_epochs = min(5, max(1, EPOCHS // 10))
+        linear_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs
+        )
+        cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max(1, EPOCHS - warmup_epochs), eta_min=1e-6
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[linear_scheduler, cosine_scheduler], milestones=[warmup_epochs]
+        )
 
     scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
@@ -318,7 +359,11 @@ def train():
 
             with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
                 logits = model(spectrograms)
-                loss = criterion(logits, targets)
+                if args.label_smoothing > 0.0:
+                    smoothed_targets = targets * (1.0 - args.label_smoothing) + 0.5 * args.label_smoothing
+                    loss = criterion(logits, smoothed_targets)
+                else:
+                    loss = criterion(logits, targets)
                 loss_to_backward = loss / accum_steps
 
             scaler.scale(loss_to_backward).backward()
