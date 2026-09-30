@@ -21,7 +21,7 @@ from data.sampler import DistributedWeightedSampler
 from metrics.classification import MultiLabelClassificationMetrics
 
 parser = argparse.ArgumentParser(description="Train a CMKD-style EfficientNet CNN classifier on FSD50K multi-label sound events")
-parser.add_argument("--batch-size", type=int, default=24, help="TOTAL batch size across all GPUs, split evenly per GPU (CMKD FSD50K CNN: 24)")
+parser.add_argument("--batch-size", type=int, default=24, help="EFFECTIVE total batch per optimizer step, split across GPUs and --grad-accum-steps (CMKD FSD50K CNN: 24)")
 parser.add_argument("--duration-sec", type=float, default=10.0, help="Audio clip duration in seconds")
 parser.add_argument("--target-frames", type=int, default=1000, help="Target spectrogram frames")
 parser.add_argument("--checkpoint-path", type=str, default=None, help="Resume training checkpoint")
@@ -136,9 +136,17 @@ def train():
     set_seed(args.seed + rank)
 
     EPOCHS = args.num_epoch
-    if args.batch_size % world_size != 0:
-        raise ValueError(f"--batch-size {args.batch_size} (total) must be divisible by world size {world_size}")
-    BATCH_SIZE = args.batch_size // world_size  # per-GPU
+    # --batch-size is the EFFECTIVE total batch per optimizer step:
+    # per-GPU micro-batch = total / (num GPUs * grad-accum steps).
+    # (EfficientNet has BatchNorm, so accumulation is not exactly equivalent to a
+    # bigger batch here -- prefer --grad-accum-steps 1 for the CNN if memory allows.)
+    micro_divisor = world_size * args.grad_accum_steps
+    if args.batch_size % micro_divisor != 0:
+        raise ValueError(
+            f"--batch-size {args.batch_size} (total) must be divisible by "
+            f"world size {world_size} x --grad-accum-steps {args.grad_accum_steps}"
+        )
+    BATCH_SIZE = args.batch_size // micro_divisor  # per-GPU micro-batch
     NUM_CLASSES = 200
     patience = args.patience
     checkpoint_path = args.checkpoint_path

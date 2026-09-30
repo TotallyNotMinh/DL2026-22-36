@@ -23,13 +23,13 @@ from data.sampler import DistributedWeightedSampler
 from metrics.classification import MultiLabelClassificationMetrics
 
 parser = argparse.ArgumentParser(description="CMKD CNN->AST knowledge distillation on FSD50K (frozen EfficientNet teacher, AST student)")
-parser.add_argument("--batch-size", type=int, default=12, help="TOTAL batch size across all GPUs, split evenly per GPU (CMKD FSD50K AST: 12)")
+parser.add_argument("--batch-size", type=int, default=12, help="EFFECTIVE total batch per optimizer step, split across GPUs and --grad-accum-steps (CMKD FSD50K AST: 12)")
 parser.add_argument("--duration-sec", type=float, default=10.0, help="Audio clip duration in seconds")
 parser.add_argument("--target-frames", type=int, default=1000, help="Target spectrogram frames")
 parser.add_argument("--checkpoint-path", type=str, default=None, help="Resume training checkpoint (student)")
 parser.add_argument("--checkpoint-dir", type=str, default="checkpoints/fsd50k_kd_ast_base/", help="Directory to save checkpoints")
 parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
-parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
+parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps. Does not change the effective batch (--batch-size), only splits it into smaller micro-batches to save GPU memory")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
 parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs (CMKD FSD50K default: 50)")
 parser.add_argument("--lr", type=float, default=5e-5, help="Initial learning rate (CMKD FSD50K AST default: 5e-5)")
@@ -178,9 +178,15 @@ def train():
     set_seed(args.seed + rank)
 
     EPOCHS = args.num_epoch
-    if args.batch_size % world_size != 0:
-        raise ValueError(f"--batch-size {args.batch_size} (total) must be divisible by world size {world_size}")
-    BATCH_SIZE = args.batch_size // world_size  # per-GPU
+    # --batch-size is the EFFECTIVE total batch per optimizer step:
+    # per-GPU micro-batch = total / (num GPUs * grad-accum steps).
+    micro_divisor = world_size * args.grad_accum_steps
+    if args.batch_size % micro_divisor != 0:
+        raise ValueError(
+            f"--batch-size {args.batch_size} (total) must be divisible by "
+            f"world size {world_size} x --grad-accum-steps {args.grad_accum_steps}"
+        )
+    BATCH_SIZE = args.batch_size // micro_divisor  # per-GPU micro-batch
     NUM_CLASSES = 200
     patience = args.patience
     checkpoint_path = args.checkpoint_path
