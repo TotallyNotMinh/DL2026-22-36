@@ -15,22 +15,24 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from models import CNNClassifier, ARCH_CONFIGS
+from models import Classifer, CNNClassifier
+from models import ARCH_CONFIGS as CNN_ARCH_CONFIGS
+from losses import KDLoss
 from data.dataset import FSD50KDataset
 from data.sampler import DistributedWeightedSampler
 from metrics.classification import MultiLabelClassificationMetrics
 
-parser = argparse.ArgumentParser(description="Train a CMKD-style EfficientNet CNN classifier on FSD50K multi-label sound events")
-parser.add_argument("--batch-size", type=int, default=24, help="TOTAL batch size across all GPUs, split evenly per GPU (CMKD FSD50K CNN: 24)")
+parser = argparse.ArgumentParser(description="CMKD CNN->AST knowledge distillation on FSD50K (frozen EfficientNet teacher, AST student)")
+parser.add_argument("--batch-size", type=int, default=12, help="TOTAL batch size across all GPUs, split evenly per GPU (CMKD FSD50K AST: 12)")
 parser.add_argument("--duration-sec", type=float, default=10.0, help="Audio clip duration in seconds")
 parser.add_argument("--target-frames", type=int, default=1000, help="Target spectrogram frames")
-parser.add_argument("--checkpoint-path", type=str, default=None, help="Resume training checkpoint")
-parser.add_argument("--checkpoint-dir", type=str, default="checkpoints/fsd50k_cnn_b0/", help="Directory to save checkpoints")
+parser.add_argument("--checkpoint-path", type=str, default=None, help="Resume training checkpoint (student)")
+parser.add_argument("--checkpoint-dir", type=str, default="checkpoints/fsd50k_kd_ast_base/", help="Directory to save checkpoints")
 parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
 parser.add_argument("--grad-accum-steps", type=int, default=1, help="Gradient accumulation steps")
 parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root")
 parser.add_argument("--num-epoch", type=int, default=50, help="Number of training epochs (CMKD FSD50K default: 50)")
-parser.add_argument("--lr", type=float, default=5e-4, help="Initial learning rate (CMKD FSD50K CNN default: 5e-4)")
+parser.add_argument("--lr", type=float, default=5e-5, help="Initial learning rate (CMKD FSD50K AST default: 5e-5)")
 parser.add_argument("--weight-decay", type=float, default=5e-7, help="Adam weight decay (PSLA/AST released code: 5e-7)")
 parser.add_argument("--adam-beta1", type=float, default=0.95, help="Adam beta1 (PSLA/AST released code: 0.95; beta2 stays 0.999)")
 parser.add_argument("--warmup-steps", type=int, default=1000, help="Linear LR warmup over the first N optimizer steps, updated every 50 steps (PSLA/AST released code: 1000). 0 disables")
@@ -40,22 +42,36 @@ parser.add_argument("--norm-std", type=float, default=4.5699, help="Spectrogram 
 parser.add_argument("--num-workers", type=int, default=4, help="DataLoader workers per GPU")
 parser.add_argument("--patience", type=int, default=0, help="Early stopping patience (epochs without mAP improvement); 0 disables -- CMKD trains the full epoch count")
 parser.add_argument("--val-interval", type=int, default=1, help="Validation frequency (in epochs)")
-parser.add_argument("--mock", action="store_true", help="Use synthetic mock data for testing/benchmarking")
+parser.add_argument("--mock", action="store_true", help="Use synthetic mock data (and a random teacher if --teacher-checkpoint is not given)")
 parser.add_argument("--no-augment", action="store_true", help="Disable data augmentation (SpecAugment, Mixup, TimeShift, Noise)")
 parser.add_argument("--freq-mask", type=int, default=48, help="SpecAugment frequency mask parameter (CMKD FSD50K default: 48)")
 parser.add_argument("--time-mask", type=int, default=192, help="SpecAugment time mask parameter (CMKD FSD50K default: 192)")
 parser.add_argument("--time-shift", type=int, default=10, help="Random time shift in frames (CMKD default: 10)")
 parser.add_argument("--noise-level", type=float, default=0.05, help="Spectrogram uniform noise level (CMKD default: 0.05)")
-parser.add_argument("--label-smoothing", type=float, default=0.1, help="BCE label smoothing factor (CMKD default: 0.1)")
+parser.add_argument("--label-smoothing", type=float, default=0.1, help="BCE label smoothing factor, ground-truth term only (CMKD default: 0.1)")
 parser.add_argument("--no-class-balancing", action="store_true", help="Disable class-balanced sampling")
 parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
 parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
-parser.add_argument("--arch", type=str, default="b0", choices=list(ARCH_CONFIGS.keys()), help="EfficientNet backbone (default: b0, CMKD's optimal teacher for AST-Base)")
-parser.add_argument("--no-pretrained", action="store_true", help="Disable ImageNet-pretrained backbone initialization")
+parser.add_argument("--arch", type=str, default="base", choices=["tiny", "small", "base"], help="AST student backbone (default: base, CMKD's optimal CNN->AST student)")
+parser.add_argument("--no-dino", action="store_true", help="Disable pretrained DeiT initialization of the student")
+parser.add_argument("--teacher-arch", type=str, default="b0", choices=list(CNN_ARCH_CONFIGS.keys()), help="EfficientNet teacher backbone (default: b0)")
+parser.add_argument("--teacher-checkpoint", type=str, default=None, help="Trained teacher checkpoint (best_cnn.pth from scripts/train_cnn_classifier.py). Required unless --mock")
+parser.add_argument("--kd-lambda", type=float, default=0.5, help="Ground-truth vs distillation balance lambda (CMKD default: 0.5)")
+parser.add_argument("--kd-tau", type=float, default=1.0, help="Temperature on teacher logits only (CMKD CNN->AST default: 1.0)")
 parser.add_argument("--lr-patience", type=int, default=2, help="Epochs with no val mAP improvement before LR is halved (CMKD default: 2)")
 parser.add_argument("--lr-factor", type=float, default=0.5, help="LR reduction factor on plateau (CMKD default: 0.5)")
 
+# Copy of scripts/train_classifier.py's table -- importing that script would run its parse_args().
+AST_ARCH_CONFIGS = {
+    "tiny": {"tok_dim": 192, "num_head": 3, "num_layer": 12, "name": "DeiT ViT-Tiny"},
+    "small": {"tok_dim": 384, "num_head": 6, "num_layer": 12, "name": "DeiT ViT-Small"},
+    "base": {"tok_dim": 768, "num_head": 12, "num_layer": 12, "name": "DeiT ViT-Base"},
+}
+
 args = parser.parse_args()
+
+if args.teacher_checkpoint is None and not args.mock:
+    parser.error("--teacher-checkpoint is required unless --mock is set")
 
 
 def set_seed(seed=42):
@@ -69,6 +85,32 @@ def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % (2**32)
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+
+
+def build_teacher(arch, checkpoint_path, num_classes, device, is_main=True):
+    """Frozen CNN teacher. Not DDP-wrapped: it has no trainable params."""
+    # pretrained=False: weights come from the checkpoint (or stay random under --mock),
+    # so there is no point downloading ImageNet weights.
+    teacher = CNNClassifier(arch=arch, num_classes=num_classes, pretrained=False, dropout=0.0)
+
+    if checkpoint_path is not None:
+        if not os.path.isfile(checkpoint_path):
+            raise FileNotFoundError(f"Teacher checkpoint not found: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        state_dict = checkpoint["model_state_dict"] if "model_state_dict" in checkpoint else checkpoint
+        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+        teacher.load_state_dict(state_dict, strict=True)
+        if is_main:
+            teacher_map = checkpoint.get("best_map") if isinstance(checkpoint, dict) else None
+            map_desc = f", val mAP {teacher_map:.4f}" if teacher_map is not None else ""
+            print(f"Loaded teacher from {checkpoint_path}{map_desc}")
+    elif is_main:
+        print("WARNING: no --teacher-checkpoint given; using a RANDOM teacher (mock smoke test only).")
+
+    teacher = teacher.to(device)
+    teacher.eval()
+    teacher.requires_grad_(False)
+    return teacher
 
 
 def save_checkpoint(checkpoint_dir, checkpoint_name, epoch, model, optimizer, scheduler, best_map, epochs_without_improvement, scaler):
@@ -112,7 +154,7 @@ def load_resume_checkpoint(checkpoint_path, device, model, optimizer, scheduler,
     best_map = checkpoint.get("best_map", 0.0)
     epochs_without_improvement = checkpoint.get("epochs_without_improvement", 0)
 
-    print(f"Resumed CNN checkpoint from {checkpoint_path}: start epoch {start_epoch}, best mAP: {best_map:.4f}")
+    print(f"Resumed KD student checkpoint from {checkpoint_path}: start epoch {start_epoch}, best mAP: {best_map:.4f}")
     return start_epoch, best_map, epochs_without_improvement
 
 
@@ -144,10 +186,13 @@ def train():
     checkpoint_path = args.checkpoint_path
     checkpoint_dir = args.checkpoint_dir
 
-    # ============== Loss Function ==============
-    criterion = nn.BCEWithLogitsLoss().to(device)
+    # ============== Loss Functions ==============
+    kd_criterion = KDLoss(lam=args.kd_lambda, tau=args.kd_tau, label_smoothing=args.label_smoothing)
+    val_criterion = nn.BCEWithLogitsLoss().to(device)
 
     # ============== Datasets & Loaders ==============
+    # Augmentation happens inside the dataset, so teacher and student both see the
+    # same augmented batch -- CMKD's "consistent teaching" with no extra code.
     train_dataset = FSD50KDataset(
         root_dir=args.data_path,
         split="train",
@@ -220,24 +265,31 @@ def train():
         worker_init_fn=seed_worker,
     ) if is_main else None
 
-    # ============== Model Initialization ==============
-    arch_cfg = ARCH_CONFIGS[args.arch]
-    model = CNNClassifier(
-        arch=args.arch,
+    # ============== Teacher (frozen CNN) ==============
+    teacher = build_teacher(args.teacher_arch, args.teacher_checkpoint, NUM_CLASSES, device, is_main=is_main)
+
+    # ============== Student (AST) ==============
+    arch_cfg = AST_ARCH_CONFIGS[args.arch]
+    model = Classifer(
+        tok_dim=arch_cfg["tok_dim"],
         num_classes=NUM_CLASSES,
-        pretrained=not args.no_pretrained,
-        dropout=0.0,
+        c_in=1,
+        overlap=6,
+        patch_size=16,
+        size=(128, args.target_frames),
+        num_head=arch_cfg["num_head"],
+        num_layer=arch_cfg["num_layer"],
+        pretrained_dino=not args.no_dino,
+        use_cls_dist=True,
     ).to(device)
 
     # ============== Optimizer & Scheduler ==============
-    # CMKD's CNN recipe uses a single Adam param group (unlike AST's split
-    # encoder/head LR) and a validation-plateau schedule, not a fixed step decay.
+    # CMKD/AST: plain Adam, single LR for the whole student, validation-plateau schedule.
     optimizer = torch.optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay, betas=(args.adam_beta1, 0.999)
     )
 
-    # mode="max" because mAP is "higher is better" -- the default mode="min"
-    # would halve the LR exactly when it shouldn't.
+    # mode="max" because mAP is "higher is better".
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", factor=args.lr_factor, patience=args.lr_patience
     )
@@ -258,12 +310,13 @@ def train():
     metrics = MultiLabelClassificationMetrics(num_classes=NUM_CLASSES)
 
     if is_main:
-        print(f"[Rank 0] FSD50K CNN Classifier Training (CMKD CNN-teacher recipe):")
+        print(f"[Rank 0] FSD50K CMKD Knowledge Distillation (CNN -> AST):")
         print(f"  • Device:                 {device} (world size: {world_size})")
         print(f"  • Total samples:          {len(train_dataset)} train, {len(val_dataset)} val")
         print(f"  • Effective batch size:   {BATCH_SIZE * world_size * args.grad_accum_steps}")
-        print(f"  • Architecture:           {arch_cfg['name']}")
-        print(f"  • Pretrained Backbone:    {'ImageNet (torchvision)' if not args.no_pretrained else 'Random init'}")
+        print(f"  • Student:                AST {arch_cfg['name']} ({'DeiT-pretrained' if not args.no_dino else 'Random init'})")
+        print(f"  • Teacher:                {CNN_ARCH_CONFIGS[args.teacher_arch]['name']} (frozen)")
+        print(f"  • KD:                     lambda={args.kd_lambda}, tau={args.kd_tau}, consistent teaching")
         sampler_desc = (
             "Class-Balanced (DistributedWeightedSampler)"
             if (not args.no_class_balancing and not args.mock and is_distributed)
@@ -290,6 +343,8 @@ def train():
 
         model.train(True)
         running_train_loss = 0.0
+        running_gt_loss = 0.0
+        running_kd_loss = 0.0
         accum_steps = args.grad_accum_steps
         optimizer.zero_grad(set_to_none=True)
 
@@ -304,13 +359,13 @@ def train():
             targets = targets.to(device, non_blocking=True)
 
             with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
-                logits = model(spectrograms)
-                if args.label_smoothing > 0.0:
-                    smoothed_targets = targets * (1.0 - args.label_smoothing) + 0.5 * args.label_smoothing
-                    loss = criterion(logits, smoothed_targets)
-                else:
-                    loss = criterion(logits, targets)
-                loss_to_backward = loss / accum_steps
+                with torch.no_grad():
+                    teacher_logits = teacher(spectrograms)
+                student_logits = model(spectrograms)
+
+            # KDLoss casts to float32 itself; keep it outside autocast.
+            loss, gt_loss, kd_loss = kd_criterion(student_logits, teacher_logits, targets)
+            loss_to_backward = loss / accum_steps
 
             scaler.scale(loss_to_backward).backward()
 
@@ -329,17 +384,26 @@ def train():
                 global_step += 1
 
             running_train_loss += loss.item()
+            running_gt_loss += gt_loss.item()
+            running_kd_loss += kd_loss.item()
             if is_main:
-                train_pbar.set_postfix({"bce": f"{loss.item():.4f}"})
+                train_pbar.set_postfix({
+                    "loss": f"{loss.item():.4f}",
+                    "bce": f"{gt_loss.item():.4f}",
+                    "kd": f"{kd_loss.item():.4f}",
+                })
 
-        avg_train_loss = running_train_loss / max(1, len(train_loader))
-
+        num_batches = max(1, len(train_loader))
+        avg_losses = torch.tensor(
+            [running_train_loss / num_batches, running_gt_loss / num_batches, running_kd_loss / num_batches],
+            device=device,
+        )
         if is_distributed:
-            loss_tensor = torch.tensor([avg_train_loss], device=device)
-            dist.all_reduce(loss_tensor, op=dist.ReduceOp.SUM)
-            avg_train_loss = (loss_tensor / world_size).item()
+            dist.all_reduce(avg_losses, op=dist.ReduceOp.SUM)
+            avg_losses = avg_losses / world_size
+        avg_train_loss, avg_gt_loss, avg_kd_loss = avg_losses.tolist()
 
-        # ============== Validation Loop (Rank 0) ==============
+        # ============== Validation Loop (Rank 0, student only) ==============
         val_map_for_scheduler = None
         val_results = None
         avg_val_loss = None
@@ -362,7 +426,7 @@ def train():
 
                     with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
                         logits = raw_model(spectrograms)
-                        val_loss = criterion(logits, targets)
+                        val_loss = val_criterion(logits, targets)
 
                     running_val_loss += val_loss.item()
                     metrics.update(logits, targets)
@@ -378,9 +442,7 @@ def train():
 
         # ============== Sync the plateau scheduler across ranks ==============
         # Only rank 0 computed val_map above; every rank must step the
-        # scheduler with the *same* value so their optimizer LRs stay in
-        # sync (mirrors the should_stop/avg_train_loss broadcast pattern
-        # already used elsewhere in this repo's training scripts).
+        # scheduler with the *same* value so their optimizer LRs stay in sync.
         if is_distributed:
             val_map_tensor = torch.tensor(
                 [val_map_for_scheduler if val_map_for_scheduler is not None else -1.0],
@@ -394,9 +456,8 @@ def train():
             scheduler.step(val_map_for_scheduler)
 
         # ============== Rank-0 bookkeeping: print + checkpoint ==============
-        # Runs AFTER the scheduler step (and after best_map/epochs_without_improvement
-        # are updated for THIS epoch), so checkpoint.pth's scheduler_state_dict and
-        # best-tracking fields are never one epoch stale on resume.
+        # Runs AFTER the scheduler step, so checkpoint.pth's scheduler_state_dict
+        # and best-tracking fields are never one epoch stale on resume.
         if is_main and val_results is not None:
             val_map = val_results["mAP"]
             val_mauc = val_results["mAUC"]
@@ -408,7 +469,7 @@ def train():
 
             print(
                 f"=== Epoch [{epoch:02d}/{EPOCHS:02d}] | "
-                f"Train BCE: {avg_train_loss:.4f} | "
+                f"Train Loss: {avg_train_loss:.4f} (BCE {avg_gt_loss:.4f}, KD {avg_kd_loss:.4f}) | "
                 f"Val BCE: {avg_val_loss:.4f} | "
                 f"mAP: {val_map:.4f} | "
                 f"mAUC: {val_mauc:.4f} | "
@@ -416,7 +477,7 @@ def train():
                 f"Macro-F1: {macro_f1:.4f} | "
                 f"Top-1 Hit: {top1_hit:.4f} | "
                 f"Top-5 Hit: {top5_hit:.4f} | "
-                f"LR: {current_lr:.6f} ==="
+                f"LR: {current_lr:.7f} ==="
             )
 
             if val_map > best_map:
@@ -432,10 +493,10 @@ def train():
 
             if epochs_without_improvement == 0:
                 save_checkpoint(
-                    checkpoint_dir, "best_cnn.pth", epoch, model, optimizer, scheduler,
+                    checkpoint_dir, "best_kd_ast.pth", epoch, model, optimizer, scheduler,
                     best_map, epochs_without_improvement, scaler,
                 )
-                print(f"  --> Saved new best CNN checkpoint (Val mAP: {best_map:.4f})")
+                print(f"  --> Saved new best KD-AST checkpoint (Val mAP: {best_map:.4f})")
 
             del val_results
 

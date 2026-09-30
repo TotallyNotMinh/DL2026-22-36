@@ -21,6 +21,8 @@ models/
   denoiser.py          Encoder + decoder, trained on ACAD
   classifier.py         Encoder + linear head, trained on FSD50K
   cnn_classifier.py    EfficientNet-based CNN classifier (CMKD teacher)
+losses/
+  distillation.py      CMKD KD loss (BCE + per-class Bernoulli KL, teacher temperature)
 data/
   dataset.py           ACADDataset, FSD50KDataset
   augment.py           SpecAugment, mixup, random noise/time-shift
@@ -31,6 +33,7 @@ scripts/
   train_denoise.py           Denoiser pretraining (ACAD)
   train_classifier.py        AST classifier fine-tuning (FSD50K)
   train_cnn_classifier.py    CNN teacher training (FSD50K)
+  train_kd.py                CNN->AST knowledge distillation (FSD50K)
 docs/
   cmkd-paper-notes.md  Research notes on the CMKD/AST/PSLA papers this project builds on
 train.ipynb            Kaggle launch notebook (clone, install, torchrun each script)
@@ -48,6 +51,7 @@ Every script supports `--mock`, which swaps in synthetic tensors in place of rea
 python scripts/train_denoise.py --mock
 python scripts/train_classifier.py --mock
 python scripts/train_cnn_classifier.py --mock
+python scripts/train_kd.py --mock            # uses a random teacher when --teacher-checkpoint is omitted
 ```
 
 ## Training on Kaggle
@@ -56,8 +60,12 @@ python scripts/train_cnn_classifier.py --mock
 
 ```bash
 torchrun --nproc_per_node=2 scripts/train_classifier.py --data-path data/fsd50k --batch-size 48
-torchrun --nproc_per_node=2 scripts/train_cnn_classifier.py --data-path data/fsd50k --batch-size 12
+torchrun --nproc_per_node=2 scripts/train_cnn_classifier.py --data-path data/fsd50k --batch-size 24
+torchrun --nproc_per_node=2 scripts/train_kd.py --data-path data/fsd50k --batch-size 12 \
+        --teacher-checkpoint checkpoints/fsd50k_cnn_b0/best_cnn.pth
 ```
+
+Note: `train_classifier.py` takes a per-GPU `--batch-size`; the two CMKD scripts take the **total** batch and split it across GPUs.
 
 ## Datasets
 
@@ -69,7 +77,8 @@ torchrun --nproc_per_node=2 scripts/train_cnn_classifier.py --data-path data/fsd
 
 - [x] AST denoiser pretraining + classifier fine-tuning pipeline
 - [x] CMKD-style EfficientNet-B0 CNN teacher, trained standalone on FSD50K
-- [ ] CNN→AST-Base cross-model knowledge distillation training loop
+- [x] CNN→AST-Base cross-model knowledge distillation training loop (`scripts/train_kd.py`)
+- [ ] Run the KD experiment on Kaggle and compare against the paper's 61.7 mAP
 - [ ] Evaluation of denoiser / AST classifier / CNN teacher / distilled model against the unseen-condition benchmark
 
 ## References

@@ -27,9 +27,11 @@ ARCH_CONFIGS = {
 def _adapt_stem_to_single_channel(stem_conv: nn.Conv2d) -> nn.Conv2d:
     """
     Replaces a 3-input-channel stem conv with a 1-input-channel conv whose
-    weights are the channel-mean of the pretrained 3-channel weights.
+    weights are the channel-SUM of the pretrained 3-channel weights.
     Same trick as models/encoder.py::DINOVisionTransformer.load_pretrained_dino_weights,
-    applied to a plain conv instead of a patch-embed conv.
+    applied to a plain conv instead of a patch-embed conv. (CMKD/AST average the
+    channels instead; summing is a deliberate repo choice for consistency with
+    the AST encoder -- see docs/cmkd-paper-notes.md section 9.2.)
     """
     new_conv = nn.Conv2d(
         in_channels=1,
@@ -40,12 +42,12 @@ def _adapt_stem_to_single_channel(stem_conv: nn.Conv2d) -> nn.Conv2d:
         bias=stem_conv.bias is not None,
     )
     with torch.no_grad():
-        averaged_weight = stem_conv.weight.mean(dim=1, keepdim=True)
-        assert averaged_weight.shape == new_conv.weight.shape, (
-            f"Channel-averaged stem weight shape {averaged_weight.shape} "
+        summed_weight = stem_conv.weight.sum(dim=1, keepdim=True)
+        assert summed_weight.shape == new_conv.weight.shape, (
+            f"Channel-summed stem weight shape {summed_weight.shape} "
             f"does not match new 1-channel conv shape {new_conv.weight.shape}"
         )
-        new_conv.weight.copy_(averaged_weight)
+        new_conv.weight.copy_(summed_weight)
         if stem_conv.bias is not None:
             new_conv.bias.copy_(stem_conv.bias)
     return new_conv
