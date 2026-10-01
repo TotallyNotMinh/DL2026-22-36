@@ -4,6 +4,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 import argparse
+import csv
 import random
 import numpy as np
 from tqdm import tqdm
@@ -111,6 +112,18 @@ def build_teacher(arch, checkpoint_path, num_classes, device, is_main=True):
     teacher.eval()
     teacher.requires_grad_(False)
     return teacher
+
+
+def append_metrics_csv(checkpoint_dir, row):
+    """Append one epoch's metrics to <checkpoint_dir>/metrics.csv (header written once; survives resume)."""
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    csv_path = os.path.join(checkpoint_dir, "metrics.csv")
+    write_header = not os.path.isfile(csv_path)
+    with open(csv_path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def save_checkpoint(checkpoint_dir, checkpoint_name, epoch, model, optimizer, scheduler, best_map, epochs_without_improvement, scaler):
@@ -485,6 +498,20 @@ def train():
                 f"Top-5 Hit: {top5_hit:.4f} | "
                 f"LR: {current_lr:.7f} ==="
             )
+            append_metrics_csv(checkpoint_dir, {
+                "epoch": epoch,
+                "train_loss": f"{avg_train_loss:.6f}",
+                "train_bce": f"{avg_gt_loss:.6f}",
+                "train_kd": f"{avg_kd_loss:.6f}",
+                "val_bce": f"{avg_val_loss:.6f}",
+                "mAP": f"{val_map:.6f}",
+                "mAUC": f"{val_mauc:.6f}",
+                "micro_f1": f"{micro_f1:.6f}",
+                "macro_f1": f"{macro_f1:.6f}",
+                "top1_hit": f"{top1_hit:.6f}",
+                "top5_hit": f"{top5_hit:.6f}",
+                "lr": f"{current_lr:.8g}",
+            })
 
             if val_map > best_map:
                 best_map = val_map

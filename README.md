@@ -34,6 +34,8 @@ scripts/
   train_classifier.py        AST classifier fine-tuning (FSD50K)
   train_cnn_classifier.py    CNN teacher training (FSD50K)
   train_kd.py                CNN->AST knowledge distillation (FSD50K)
+  evaluate.py                Score a CNN/AST checkpoint on the FSD50K eval (or val) split
+  aws/                       One-command launchers for AWS g5/A10G (see docs/aws-a10g-guide.md)
 docs/
   cmkd-paper-notes.md  Research notes on the CMKD/AST/PSLA papers this project builds on
 train.ipynb            Kaggle launch notebook (clone, install, torchrun each script)
@@ -66,6 +68,17 @@ torchrun --nproc_per_node=2 scripts/train_kd.py --data-path data/fsd50k --batch-
 ```
 
 Note: `train_classifier.py` takes a per-GPU `--batch-size`; the two CMKD scripts take the **total** batch and split it across GPUs.
+
+## Training on AWS (A10G)
+
+Kaggle's 12 h session limit is too short for the 50-epoch CMKD runs. `docs/aws-a10g-guide.md` covers
+instance choice, setup and data download. After that, the experiment is:
+
+```bash
+bash scripts/aws/quick_check.sh
+bash scripts/aws/run_cnn.sh     # STEP 1: CNN teacher
+bash scripts/aws/run_kd.sh      # STEP 2: KD CNN -> AST-Base
+```
 
 ## Datasets
 
