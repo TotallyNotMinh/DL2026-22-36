@@ -142,7 +142,9 @@ def save_checkpoint(checkpoint_dir, checkpoint_name, epoch, model, optimizer, sc
     if scaler is not None:
         checkpoint["scaler_state_dict"] = scaler.state_dict()
 
-    torch.save(checkpoint, checkpoint_save_path)
+    # Write-then-rename: a kill mid-save (e.g. the Kaggle 11 h timeout) never corrupts the previous file.
+    torch.save(checkpoint, checkpoint_save_path + ".tmp")
+    os.replace(checkpoint_save_path + ".tmp", checkpoint_save_path)
 
 
 def load_resume_checkpoint(checkpoint_path, device, model, optimizer, scheduler, scaler):
