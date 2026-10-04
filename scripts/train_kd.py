@@ -281,8 +281,9 @@ def train():
         val_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=args.num_workers,
+        num_workers=min(2, args.num_workers),  # few + persistent: re-forking workers every epoch spiked host RAM -> OOM-killed
         pin_memory=(device.type == "cuda"),
+        persistent_workers=(args.num_workers > 0),
         worker_init_fn=seed_worker,
     ) if is_main else None
 
