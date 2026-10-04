@@ -5,6 +5,12 @@ import torch.nn as nn
 import torchaudio.transforms as T
 import torchaudio.functional as AF
 
+try:
+    from scipy.fft import next_fast_len
+except ImportError:
+    def next_fast_len(target):
+        return 1 << (target - 1).bit_length()
+
 
 class FrequencyMasking(nn.Module):
     """
@@ -275,7 +281,12 @@ class RandomReverberation(nn.Module):
         rir[..., 0] = 1.0  # Direct sound impulse
         rir = rir / torch.sqrt(torch.sum(rir ** 2) + 1e-8)
 
-        reverbed = AF.fftconvolve(x, rir, mode="full")[..., :x.shape[-1]]
+        # Fast composite-length FFT convolution
+        n_conv = x.shape[-1] + n_rir - 1
+        n_fft = next_fast_len(n_conv)
+        X = torch.fft.rfft(x, n=n_fft)
+        H = torch.fft.rfft(rir, n=n_fft)
+        reverbed = torch.fft.irfft(X * H, n=n_fft)[..., :x.shape[-1]]
         wet = random.uniform(self.min_wet, self.max_wet)
         out = (1.0 - wet) * x + wet * reverbed
 
