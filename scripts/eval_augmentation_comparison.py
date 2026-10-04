@@ -55,28 +55,42 @@ from metrics.classification import (
 )
 
 MODEL_NAMES = [
-    ("no_aug", "No Augmentation", ["*noaug*", "*no_aug*", "*run_01*"]),
-    ("time_mask", "Time Masking", ["*time_mask*", "*run_02*"]),
-    ("freq_mask", "Frequency Masking", ["*freq_mask*", "*frequency*", "*run_03*"]),
-    ("time_freq_mask", "Time + Freq Masking", ["*time_freq*", "*time-freq*", "*run_04*"]),
-    ("mixup", "Mixup Only", ["*mixup*", "*run_05*"]),
-    ("full", "Full Augmentation", ["*full*", "*run_06*"]),
+    ("no_aug", "No Augmentation"),
+    ("time_mask", "Time Masking"),
+    ("freq_mask", "Frequency Masking"),
+    ("time_freq_mask", "Time + Freq Masking"),
+    ("mixup", "Mixup Only"),
+    ("full", "Full Augmentation"),
 ]
 
 
-def find_checkpoint(base_dir: Path, patterns: list[str]) -> Path | None:
-    for pat in patterns:
-        for p in base_dir.rglob(pat):
-            if p.is_file() and p.suffix in [".pth", ".pt", ".bin", ".zip"]:
+def matches_model(path_str: str, model_name: str) -> bool:
+    fn = path_str.lower()
+    if model_name == "no_aug":
+        return "noaug" in fn or "no_aug" in fn or "no-aug" in fn or "run_01" in fn
+    elif model_name == "time_freq_mask":
+        return "time_freq" in fn or "time-freq" in fn or "run_04" in fn
+    elif model_name == "time_mask":
+        return ("time_mask" in fn or "time-mask" in fn or "run_02" in fn) and "freq" not in fn
+    elif model_name == "freq_mask":
+        return ("freq_mask" in fn or "freq-mask" in fn or "frequency" in fn or "run_03" in fn) and "time" not in fn
+    elif model_name == "mixup":
+        return "mixup" in fn or "run_05" in fn
+    elif model_name == "full":
+        return "full" in fn or "run_06" in fn
+    return False
+
+
+def find_checkpoint(base_dir: Path, model_name: str) -> Path | None:
+    for p in sorted(base_dir.rglob("*")):
+        if p.is_file() and p.suffix in [".pth", ".pt", ".bin", ".zip"] and matches_model(p.name, model_name):
+            return p
+        elif p.is_dir() and matches_model(p.name, model_name):
+            if (p / "data.pkl").is_file():
                 return p
-            elif p.is_dir():
-                # Check for saved torch archive
-                if (p / "data.pkl").is_file():
-                    return p
-                # Check for sub-file
-                for sub in ["best_classifier.pth", "best_classifier", "model.pth"]:
-                    if (p / sub).exists():
-                        return p / sub
+            for sub in ["best_classifier.pth", "best_classifier", "model.pth"]:
+                if (p / sub).exists():
+                    return p / sub
     return None
 
 
@@ -353,8 +367,8 @@ def main():
     loaded_models = {}
     model_labels = {}
 
-    for name, label, patterns in MODEL_NAMES:
-        ckpt_path = find_checkpoint(ckpt_dir, patterns)
+    for name, label in MODEL_NAMES:
+        ckpt_path = find_checkpoint(ckpt_dir, name)
         if ckpt_path is None:
             print(f"  [!] Checkpoint for {name} ({label}) NOT found in {ckpt_dir}, skipping.")
             continue

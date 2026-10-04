@@ -8,13 +8,13 @@
 *(Submission Repository Name format: `DL2026-[GroupID]-[ProjectID]`)*  
 
 ### Authors & Team Members
-1. **Đặng Nhật Minh** – Pretraining, Noise Robustness & Benchmark Evaluation Pipeline
-2. **Nguyễn Đức Trung** – CNN Baselines (EfficientNet-B0, EfficientNet-B4) & Profiling
-3. **Trần Thị Thu Vân** – CNN Baselines (ResNet-18, ResNet-34) & Model Profiling
-4. **Vũ Thị Kim Oanh** – Data Augmentation Ablation Studies (SpecAugment & Mixup)
-5. **Nguyễn Thị Ngọc Ánh** – Classification Head & Token Pooling Ablations
-6. **Lê Gia Anh** – Vision Transformer Scaling (ViT-Tiny vs. ViT-Small)
-7. **Phạm Khải Minh** – Acoustic Noise Benchmark Synthesis (ACE Noise), EDA & DATA.md Documentation
+1. **Đào Chí Trung** – CNN Baselines (EfficientNet-B0, EfficientNet-B4) & Profiling
+2. **Phạm Hồng Vân** – CNN Baselines (ResNet-18, ResNet-34) & Model Profiling
+3. **Vũ Thị Kim Oanh** – Data Augmentation Ablation Studies (SpecAugment & Mixup)
+4. **Nguyễn Thị Ngọc Ánh** – Classification Head & Token Pooling Ablations
+5. **Phạm Gia Anh** – Vision Transformer Scaling (ViT-Tiny vs. ViT-Small)
+6. **Nguyễn Khải Minh** – Acoustic Noise Benchmark Synthesis (ACE Noise), EDA & DATA.md Documentation
+7. **Đặng Nhật Minh** – Pretraining, Noise Robustness & Benchmark Evaluation Pipeline
 
 ---
 
@@ -238,13 +238,13 @@
 
 | STT | Member Name | Role & Core Responsibilities | Specific Tasks & Deliverables | Completed Work | Contribution (%) |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| 1 | **Đặng Nhật Minh** | Pretraining, Robustness Pipeline | DL-15 (ACAD Pretraining), Synthetic Colored Noise & Schroeder Reverb augmentations, Evaluation pipeline & metrics | 100% | 14.3% |
-| 2 | **Nguyễn Đức Trung** | CNN Baselines | DL-01, DL-02 (EfficientNet-B0, B4 training, GMACs/parameter profiling, Kaggle T4 inference latency) | 100% | 14.3% |
-| 3 | **Trần Thị Thu Vân** | CNN Baselines | DL-29, DL-30 (ResNet-18, ResNet-34 training, model profiling, checkpoint evaluation) | 100% | 14.3% |
-| 4 | **Vũ Thị Kim Oanh** | Augmentation Ablations | DL-08, DL-09 (SpecAugment vs. Mixup vs. No-Aug 6-way ablation study, presentation slides) | 100% | 14.3% |
-| 5 | **Nguyễn Thị Ngọc Ánh** | Classification Layer Ablation | DL-36, DL-37 (Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens) | 100% | 14.3% |
-| 6 | **Lê Gia Anh** | Model Scaling Comparison | DL-43, DL-44 (ViT-Tiny vs. ViT-Small architecture comparison, parameters, FLOPs, inference latency) | 100% | 14.3% |
-| 7 | **Phạm Khải Minh** | Dataset Engineering & Documentation | DL-22, DL-23 (ACE Noise benchmark synthesis, FSD50K EDA, DATA.md specification) | 100% | 14.3% |
+| 1 | **Đào Chí Trung** | CNN Baselines | DL-01, DL-02 (EfficientNet-B0, B4 training, GMACs/parameter profiling, Kaggle T4 inference latency) | 100% | 14.3% |
+| 2 | **Phạm Hồng Vân** | CNN Baselines | DL-29, DL-30 (ResNet-18, ResNet-34 training, model profiling, checkpoint evaluation) | 100% | 14.3% |
+| 3 | **Vũ Thị Kim Oanh** | Augmentation Ablations | DL-08, DL-09 (SpecAugment vs. Mixup vs. No-Aug 6-way ablation study, presentation slides) | 100% | 14.3% |
+| 4 | **Nguyễn Thị Ngọc Ánh** | Classification Layer Ablation | DL-36, DL-37 (Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens) | 100% | 14.3% |
+| 5 | **Phạm Gia Anh** | Model Scaling Comparison | DL-43, DL-44 (ViT-Tiny vs. ViT-Small architecture comparison, parameters, FLOPs, inference latency) | 100% | 14.3% |
+| 6 | **Nguyễn Khải Minh** | Dataset Engineering & Documentation | DL-22, DL-23 (ACE Noise benchmark synthesis, FSD50K EDA, DATA.md specification) | 100% | 14.3% |
+| 7 | **Đặng Nhật Minh** | Pretraining, Robustness Pipeline | DL-15 (ACAD Pretraining), Synthetic Colored Noise & Schroeder Reverb augmentations, Evaluation pipeline & metrics | 100% | 14.3% |
 | **Total** | | | | | **100%** |
 
 ---
