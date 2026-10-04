@@ -8,8 +8,7 @@ import torch
 import torch.nn as nn
 from torchvision.models import (
     efficientnet_b0, EfficientNet_B0_Weights,
-    efficientnet_b2, EfficientNet_B2_Weights,
-    efficientnet_b6, EfficientNet_B6_Weights,
+    efficientnet_b4, EfficientNet_B4_Weights,
 )
 try:
     from torchinfo import summary
@@ -19,8 +18,7 @@ except ImportError:
 
 ARCH_CONFIGS = {
     "b0": {"builder": efficientnet_b0, "weights": EfficientNet_B0_Weights.IMAGENET1K_V1, "feature_dim": 1280, "name": "EfficientNet-B0"},
-    "b2": {"builder": efficientnet_b2, "weights": EfficientNet_B2_Weights.IMAGENET1K_V1, "feature_dim": 1408, "name": "EfficientNet-B2"},
-    "b6": {"builder": efficientnet_b6, "weights": EfficientNet_B6_Weights.IMAGENET1K_V1, "feature_dim": 2304, "name": "EfficientNet-B6"},
+    "b4": {"builder": efficientnet_b4, "weights": EfficientNet_B4_Weights.IMAGENET1K_V1, "feature_dim": 1792, "name": "EfficientNet-B4"},
 }
 
 

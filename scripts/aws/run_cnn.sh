@@ -5,7 +5,8 @@
 #   bash scripts/aws/run_cnn.sh --num-epoch 1   # extra args are passed to the training script
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-RUN_DIR="$RUNS_DIR/fsd50k_cnn_b0"
+ARCH="${ARCH:-b0}"   # b0 or b4:  ARCH=b4 bash scripts/aws/run_cnn.sh
+RUN_DIR="$RUNS_DIR/fsd50k_cnn_$ARCH"
 mkdir -p "$RUN_DIR"
 check_data_path
 print_settings "STEP 1: CNN teacher -> $RUN_DIR" | tee -a "$RUN_DIR/train.log"
@@ -14,7 +15,7 @@ print_settings "STEP 1: CNN teacher -> $RUN_DIR" | tee -a "$RUN_DIR/train.log"
 # present after an interruption (resumes from the last finished epoch).
 "${LAUNCH[@]}" scripts/train_cnn_classifier.py \
     --data-path "$DATA_PATH" \
-    --batch-size 24 --lr 5e-4 --num-epoch 50 \
+    --arch "$ARCH" --batch-size 24 --lr 5e-4 --num-epoch 30 \
     --num-workers "$NUM_WORKERS" \
     --checkpoint-dir "$RUN_DIR/" \
     --checkpoint-path "$RUN_DIR/checkpoint.pth" \
