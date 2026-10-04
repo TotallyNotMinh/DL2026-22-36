@@ -3,10 +3,12 @@
 # CMKD FSD50K AST recipe: LR 5e-5, total batch 12, 50 epochs, BCE + KD (lambda 0.5, tau 1.0).
 #   bash scripts/aws/run_kd.sh                 # fresh run, or resume after an interruption (same command)
 #   KD_ACCUM=3 bash scripts/aws/run_kd.sh      # smaller micro-batch if CUDA runs out of memory
+#   RUN_DIR=/data/runs/fsd50k_ast_base_nokd bash scripts/aws/run_kd.sh --kd-lambda 1.0
+#                                               # AST baseline WITHOUT KD (lambda=1 -> pure BCE), same recipe
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 TEACHER="${TEACHER:-$RUNS_DIR/fsd50k_cnn_b0/best_cnn.pth}"
-RUN_DIR="$RUNS_DIR/fsd50k_kd_ast_base"
+RUN_DIR="${RUN_DIR:-$RUNS_DIR/fsd50k_kd_ast_base}"
 
 # Gradient accumulation keeps the effective batch at 12 while limiting clips per GPU:
 # 1 GPU -> 2 steps x 6 clips; 2+ GPUs -> 1 step (12/NGPU clips each). AST has no BatchNorm,
