@@ -50,6 +50,12 @@ parser.add_argument("--label-smoothing", type=float, default=0.1, help="BCE labe
 parser.add_argument("--no-class-balancing", action="store_true", help="Disable class-balanced sampling")
 parser.add_argument("--mixup-alpha", type=float, default=0.5, help="Mixup beta distribution alpha parameter")
 parser.add_argument("--mixup-prob", type=float, default=0.5, help="Probability of applying Mixup per sample")
+parser.add_argument("--colored-noise-prob", type=float, default=0.5, help="Probability of applying synthetic colored noise (white/pink/brown)")
+parser.add_argument("--colored-noise-min-snr", type=float, default=-5.0, help="Minimum SNR in dB for colored noise augmentation")
+parser.add_argument("--colored-noise-max-snr", type=float, default=20.0, help="Maximum SNR in dB for colored noise augmentation")
+parser.add_argument("--reverb-prob", type=float, default=0.3, help="Probability of applying synthetic room reverberation")
+parser.add_argument("--reverb-min-t60", type=float, default=0.15, help="Minimum decay time T60 in seconds for reverberation")
+parser.add_argument("--reverb-max-t60", type=float, default=0.6, help="Maximum decay time T60 in seconds for reverberation")
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
 parser.add_argument("--no-cls-dist", action="store_true", help="Disable CLS+DIST dual token pooling (fall back to mean pooling)")
@@ -209,6 +215,12 @@ def train():
         noise_param=args.noise_level,
         mixup_alpha=args.mixup_alpha,
         mixup_prob=args.mixup_prob,
+        colored_noise_prob=args.colored_noise_prob,
+        colored_noise_min_snr=args.colored_noise_min_snr,
+        colored_noise_max_snr=args.colored_noise_max_snr,
+        reverb_prob=args.reverb_prob,
+        reverb_min_t60=args.reverb_min_t60,
+        reverb_max_t60=args.reverb_max_t60,
         normalize=True,
     )
     val_dataset = FSD50KDataset(
@@ -361,6 +373,12 @@ def train():
             )
         )
         print(f"  • Sampling:               {sampler_desc}")
+        aug_desc = "Disabled (--no-augment)" if args.no_augment else (
+            f"SpecAugment(f={args.freq_mask}, t={args.time_mask}), Mixup(p={args.mixup_prob}, a={args.mixup_alpha}), "
+            f"TimeShift(±{args.time_shift}), ColoredNoise(p={args.colored_noise_prob}, snr=[{args.colored_noise_min_snr}, {args.colored_noise_max_snr}]dB), "
+            f"Reverb(p={args.reverb_prob}, t60=[{args.reverb_min_t60}, {args.reverb_max_t60}]s)"
+        )
+        print(f"  • Augmentations:          {aug_desc}")
 
     # ============== Training and Validation Loop ==============
     for epoch in range(start_epoch, EPOCHS + 1):

@@ -9,7 +9,14 @@ import torchaudio
 import torchaudio.functional as AF
 import torchaudio.transforms as T
 
-from data.augment import SpecAugment, mixup_samples, RandomTimeShift, RandomNoise
+from data.augment import (
+    SpecAugment,
+    mixup_samples,
+    RandomTimeShift,
+    RandomNoise,
+    RandomColoredNoise,
+    RandomReverberation,
+)
 
 class FSD50KDataset(Dataset):
     """
@@ -50,6 +57,12 @@ class FSD50KDataset(Dataset):
         normalize=True,
         norm_mean=-4.2677393,
         norm_std=4.5689974,
+        colored_noise_prob=0.5,
+        colored_noise_min_snr=-5.0,
+        colored_noise_max_snr=20.0,
+        reverb_prob=0.3,
+        reverb_min_t60=0.15,
+        reverb_max_t60=0.6,
     ):
         super().__init__()
         self.root_dir = Path(root_dir)
@@ -76,6 +89,28 @@ class FSD50KDataset(Dataset):
             n_mels=n_mels,
             center=True,
             power=2.0,
+        )
+
+        self.reverb = (
+            RandomReverberation(
+                p=reverb_prob,
+                min_t60=reverb_min_t60,
+                max_t60=reverb_max_t60,
+                sample_rate=sample_rate,
+            )
+            if (self.use_augment and reverb_prob > 0.0)
+            else None
+        )
+
+        self.colored_noise = (
+            RandomColoredNoise(
+                p=colored_noise_prob,
+                min_snr_db=colored_noise_min_snr,
+                max_snr_db=colored_noise_max_snr,
+                sample_rate=sample_rate,
+            )
+            if (self.use_augment and colored_noise_prob > 0.0)
+            else None
         )
 
         self.time_shift = RandomTimeShift(max_shift=time_shift_param) if (self.use_augment and time_shift_param > 0) else None
@@ -171,6 +206,8 @@ class FSD50KDataset(Dataset):
             ])
 
         samples = []
+        available_fnames = {os.path.splitext(f)[0] for f in os.listdir(audio_dir)} if (audio_dir and audio_dir.is_dir()) else None
+
         with open(csv_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -180,6 +217,9 @@ class FSD50KDataset(Dataset):
                         continue
 
                 fname = row["fname"].strip()
+                if available_fnames is not None and fname not in available_fnames:
+                    continue
+
                 labels_str = row.get("labels", "").strip()
                 label_list = [l.strip() for l in labels_str.split(",") if l.strip()]
 
@@ -191,6 +231,26 @@ class FSD50KDataset(Dataset):
                 samples.append((str(audio_path), label_list))
 
         return samples
+
+    def _process_waveform(self, waveform):
+        if self.use_augment:
+            if self.reverb is not None:
+                waveform = self.reverb(waveform)
+            if self.colored_noise is not None:
+                waveform = self.colored_noise(waveform)
+
+        mel = self.mel_transform(waveform)
+        log_mel = torch.log(mel.clamp(min=1e-6))
+
+        if self.normalize:
+            log_mel = (log_mel - self.norm_mean) / (self.norm_std * 2.0)
+
+        if log_mel.shape[-1] > self.target_frames:
+            log_mel = log_mel[..., :self.target_frames]
+        elif log_mel.shape[-1] < self.target_frames:
+            log_mel = F.pad(log_mel, (0, self.target_frames - log_mel.shape[-1]))
+
+        return log_mel
 
     def _load_and_crop_audio(self, file_path):
         waveform, sr = torchaudio.load(file_path)
@@ -215,18 +275,7 @@ class FSD50KDataset(Dataset):
             pad = self.target_len - length
             waveform = F.pad(waveform, (0, pad))
 
-        mel = self.mel_transform(waveform)
-        log_mel = torch.log(mel.clamp(min=1e-6))
-
-        if self.normalize:
-            log_mel = (log_mel - self.norm_mean) / (self.norm_std * 2.0)
-
-        if log_mel.shape[-1] > self.target_frames:
-            log_mel = log_mel[..., :self.target_frames]
-        elif log_mel.shape[-1] < self.target_frames:
-            log_mel = F.pad(log_mel, (0, self.target_frames - log_mel.shape[-1]))
-
-        return log_mel
+        return self._process_waveform(waveform)
 
     def __len__(self):
         if self.mock:
@@ -235,7 +284,8 @@ class FSD50KDataset(Dataset):
 
     def _get_raw_item(self, idx):
         if self.mock:
-            mel = torch.randn(1, 128, self.target_frames)
+            mock_waveform = torch.randn(1, self.target_len)
+            mel = self._process_waveform(mock_waveform)
             target = torch.zeros(self.num_classes, dtype=torch.float32)
             active_classes = torch.randint(0, self.num_classes, (random.randint(1, 3),))
             target[active_classes] = 1.0
