@@ -1,0 +1,109 @@
+model,label,threshold,precision,recall,micro_f1,macro_f1
+no_aug,No Augmentation,0.05,0.0339,0.9161,0.0654,0.0567
+no_aug,No Augmentation,0.1,0.3852,0.7691,0.5133,0.43
+no_aug,No Augmentation,0.15,0.5287,0.7119,0.6068,0.5026
+no_aug,No Augmentation,0.2,0.6066,0.6762,0.6395,0.5273
+no_aug,No Augmentation,0.25,0.6598,0.648,0.6539,0.5346
+no_aug,No Augmentation,0.3,0.7008,0.6269,0.6618,0.5331
+no_aug,No Augmentation,0.35,0.7291,0.6062,0.662,0.5235
+no_aug,No Augmentation,0.4,0.7578,0.5876,0.6619,0.5164
+no_aug,No Augmentation,0.45,0.7798,0.5688,0.6578,0.503
+no_aug,No Augmentation,0.5,0.8026,0.5508,0.6533,0.491
+no_aug,No Augmentation,0.55,0.8206,0.5311,0.6449,0.4669
+no_aug,No Augmentation,0.6,0.8385,0.5128,0.6364,0.4477
+no_aug,No Augmentation,0.65,0.853,0.4904,0.6228,0.4171
+no_aug,No Augmentation,0.7,0.8657,0.468,0.6076,0.3932
+no_aug,No Augmentation,0.75,0.8822,0.4426,0.5895,0.3551
+no_aug,No Augmentation,0.8,0.8996,0.4098,0.5631,0.3115
+no_aug,No Augmentation,0.85,0.9149,0.3627,0.5195,0.2446
+no_aug,No Augmentation,0.9,0.9318,0.2912,0.4437,0.1463
+time_mask,Time Masking,0.05,0.0344,0.9053,0.0663,0.057
+time_mask,Time Masking,0.1,0.4166,0.754,0.5367,0.4518
+time_mask,Time Masking,0.15,0.5515,0.6986,0.6164,0.5133
+time_mask,Time Masking,0.2,0.6246,0.6671,0.6452,0.5327
+time_mask,Time Masking,0.25,0.6716,0.6422,0.6566,0.5365
+time_mask,Time Masking,0.3,0.7063,0.6228,0.6619,0.5368
+time_mask,Time Masking,0.35,0.734,0.6034,0.6623,0.5296
+time_mask,Time Masking,0.4,0.7586,0.5844,0.6602,0.52
+time_mask,Time Masking,0.45,0.7809,0.5688,0.6582,0.5138
+time_mask,Time Masking,0.5,0.8002,0.5503,0.6521,0.4978
+time_mask,Time Masking,0.55,0.8168,0.5346,0.6462,0.4863
+time_mask,Time Masking,0.6,0.8338,0.5173,0.6385,0.4654
+time_mask,Time Masking,0.65,0.85,0.4992,0.629,0.4432
+time_mask,Time Masking,0.7,0.8682,0.4776,0.6162,0.4178
+time_mask,Time Masking,0.75,0.8832,0.4542,0.5999,0.389
+time_mask,Time Masking,0.8,0.8968,0.4233,0.5751,0.3426
+time_mask,Time Masking,0.85,0.911,0.3819,0.5382,0.2805
+time_mask,Time Masking,0.9,0.9304,0.3074,0.4621,0.1687
+freq_mask,Frequency Masking,0.05,0.0329,0.9402,0.0635,0.0551
+freq_mask,Frequency Masking,0.1,0.365,0.7919,0.4997,0.4089
+freq_mask,Frequency Masking,0.15,0.51,0.7268,0.5994,0.4857
+freq_mask,Frequency Masking,0.2,0.5932,0.6847,0.6357,0.5136
+freq_mask,Frequency Masking,0.25,0.6489,0.6531,0.651,0.5237
+freq_mask,Frequency Masking,0.3,0.6946,0.6239,0.6573,0.5213
+freq_mask,Frequency Masking,0.35,0.7293,0.6009,0.6589,0.5152
+freq_mask,Frequency Masking,0.4,0.7592,0.5797,0.6574,0.5032
+freq_mask,Frequency Masking,0.45,0.7856,0.5587,0.653,0.4896
+freq_mask,Frequency Masking,0.5,0.8068,0.537,0.6448,0.4699
+freq_mask,Frequency Masking,0.55,0.8246,0.5161,0.6349,0.4462
+freq_mask,Frequency Masking,0.6,0.8439,0.4944,0.6235,0.4225
+freq_mask,Frequency Masking,0.65,0.8602,0.4711,0.6088,0.3959
+freq_mask,Frequency Masking,0.7,0.8792,0.446,0.5918,0.365
+freq_mask,Frequency Masking,0.75,0.8973,0.4149,0.5674,0.3241
+freq_mask,Frequency Masking,0.8,0.915,0.378,0.535,0.2722
+freq_mask,Frequency Masking,0.85,0.932,0.3297,0.4871,0.2083
+freq_mask,Frequency Masking,0.9,0.9534,0.2578,0.4058,0.1245
+time_freq_mask,Time + Freq Masking,0.05,0.0336,0.9465,0.0648,0.0559
+time_freq_mask,Time + Freq Masking,0.1,0.3628,0.8002,0.4992,0.4061
+time_freq_mask,Time + Freq Masking,0.15,0.5083,0.7276,0.5985,0.4844
+time_freq_mask,Time + Freq Masking,0.2,0.5923,0.6842,0.6349,0.5098
+time_freq_mask,Time + Freq Masking,0.25,0.6535,0.6521,0.6528,0.5213
+time_freq_mask,Time + Freq Masking,0.3,0.6962,0.6233,0.6578,0.5163
+time_freq_mask,Time + Freq Masking,0.35,0.7316,0.5986,0.6585,0.5076
+time_freq_mask,Time + Freq Masking,0.4,0.7599,0.5763,0.6555,0.4947
+time_freq_mask,Time + Freq Masking,0.45,0.7843,0.5561,0.6508,0.4846
+time_freq_mask,Time + Freq Masking,0.5,0.8061,0.5334,0.642,0.466
+time_freq_mask,Time + Freq Masking,0.55,0.8264,0.5134,0.6333,0.4481
+time_freq_mask,Time + Freq Masking,0.6,0.8444,0.4931,0.6226,0.4254
+time_freq_mask,Time + Freq Masking,0.65,0.8609,0.4703,0.6083,0.4013
+time_freq_mask,Time + Freq Masking,0.7,0.8812,0.4422,0.5889,0.3668
+time_freq_mask,Time + Freq Masking,0.75,0.8967,0.413,0.5655,0.3252
+time_freq_mask,Time + Freq Masking,0.8,0.9116,0.3756,0.532,0.2742
+time_freq_mask,Time + Freq Masking,0.85,0.9317,0.326,0.4829,0.2069
+time_freq_mask,Time + Freq Masking,0.9,0.951,0.2517,0.398,0.1267
+mixup,Mixup Only,0.05,0.0315,0.9459,0.0609,0.0507
+mixup,Mixup Only,0.1,0.4011,0.791,0.5323,0.4441
+mixup,Mixup Only,0.15,0.546,0.7307,0.625,0.5192
+mixup,Mixup Only,0.2,0.6249,0.6889,0.6554,0.5439
+mixup,Mixup Only,0.25,0.6784,0.6555,0.6668,0.5454
+mixup,Mixup Only,0.3,0.7165,0.6284,0.6695,0.5375
+mixup,Mixup Only,0.35,0.7485,0.6052,0.6693,0.5304
+mixup,Mixup Only,0.4,0.7718,0.5837,0.6647,0.5188
+mixup,Mixup Only,0.45,0.797,0.563,0.6599,0.5007
+mixup,Mixup Only,0.5,0.8182,0.5415,0.6517,0.479
+mixup,Mixup Only,0.55,0.8352,0.5182,0.6395,0.4528
+mixup,Mixup Only,0.6,0.8498,0.4953,0.6258,0.426
+mixup,Mixup Only,0.65,0.864,0.4712,0.6098,0.3965
+mixup,Mixup Only,0.7,0.8773,0.443,0.5887,0.3614
+mixup,Mixup Only,0.75,0.8946,0.4101,0.5624,0.3189
+mixup,Mixup Only,0.8,0.9113,0.3696,0.5259,0.2659
+mixup,Mixup Only,0.85,0.9333,0.307,0.462,0.192
+mixup,Mixup Only,0.9,0.9571,0.1927,0.3209,0.0928
+full,Full Augmentation,0.05,0.0307,0.9662,0.0595,0.0505
+full,Full Augmentation,0.1,0.3578,0.8179,0.4979,0.4016
+full,Full Augmentation,0.15,0.5123,0.7462,0.6075,0.4893
+full,Full Augmentation,0.2,0.5996,0.6986,0.6453,0.5141
+full,Full Augmentation,0.25,0.6615,0.6609,0.6612,0.5185
+full,Full Augmentation,0.3,0.7101,0.6296,0.6674,0.5161
+full,Full Augmentation,0.35,0.7475,0.5988,0.6649,0.5018
+full,Full Augmentation,0.4,0.7721,0.5709,0.6564,0.4792
+full,Full Augmentation,0.45,0.7959,0.5474,0.6486,0.4587
+full,Full Augmentation,0.5,0.8192,0.52,0.6362,0.4347
+full,Full Augmentation,0.55,0.8375,0.4933,0.6209,0.4057
+full,Full Augmentation,0.6,0.8576,0.4682,0.6057,0.3789
+full,Full Augmentation,0.65,0.8774,0.4445,0.5901,0.353
+full,Full Augmentation,0.7,0.895,0.4136,0.5658,0.3171
+full,Full Augmentation,0.75,0.9143,0.3781,0.5349,0.2726
+full,Full Augmentation,0.8,0.9324,0.335,0.4929,0.2266
+full,Full Augmentation,0.85,0.948,0.2723,0.4231,0.1594
+full,Full Augmentation,0.9,0.968,0.1719,0.2919,0.0744

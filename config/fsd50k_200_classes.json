@@ -1,0 +1,1202 @@
+{
+  "Wild_animals": {
+    "class_id": 0,
+    "mid": "/m/01280g",
+    "label": "Wild_animals",
+    "search_query": "Wild animals"
+  },
+  "Motor_vehicle_(road)": {
+    "class_id": 1,
+    "mid": "/m/012f08",
+    "label": "Motor_vehicle_(road)",
+    "search_query": "Motor vehicle road"
+  },
+  "Sink_(filling_or_washing)": {
+    "class_id": 2,
+    "mid": "/m/0130jx",
+    "label": "Sink_(filling_or_washing)",
+    "search_query": "Sink filling or washing"
+  },
+  "Organ": {
+    "class_id": 3,
+    "mid": "/m/013y1f",
+    "label": "Organ",
+    "search_query": "Organ"
+  },
+  "Explosion": {
+    "class_id": 4,
+    "mid": "/m/014zdl",
+    "label": "Explosion",
+    "search_query": "Explosion"
+  },
+  "Singing": {
+    "class_id": 5,
+    "mid": "/m/015lz1",
+    "label": "Singing",
+    "search_query": "Singing"
+  },
+  "Bird": {
+    "class_id": 6,
+    "mid": "/m/015p6",
+    "label": "Bird",
+    "search_query": "Bird"
+  },
+  "Bass_guitar": {
+    "class_id": 7,
+    "mid": "/m/018vs",
+    "label": "Bass_guitar",
+    "search_query": "Bass guitar"
+  },
+  "Subway_and_metro_and_underground": {
+    "class_id": 8,
+    "mid": "/m/0195fx",
+    "label": "Subway_and_metro_and_underground",
+    "search_query": "Subway metro underground"
+  },
+  "Bicycle": {
+    "class_id": 9,
+    "mid": "/m/0199g",
+    "label": "Bicycle",
+    "search_query": "Bicycle"
+  },
+  "Boat_and_Water_vehicle": {
+    "class_id": 10,
+    "mid": "/m/019jd",
+    "label": "Boat_and_Water_vehicle",
+    "search_query": "Boat Water vehicle"
+  },
+  "Sawing": {
+    "class_id": 11,
+    "mid": "/m/01b82r",
+    "label": "Sawing",
+    "search_query": "Sawing"
+  },
+  "Cough": {
+    "class_id": 12,
+    "mid": "/m/01b_21",
+    "label": "Cough",
+    "search_query": "Cough"
+  },
+  "Bus": {
+    "class_id": 13,
+    "mid": "/m/01bjv",
+    "label": "Bus",
+    "search_query": "Bus"
+  },
+  "Drill": {
+    "class_id": 14,
+    "mid": "/m/01d380",
+    "label": "Drill",
+    "search_query": "Drill"
+  },
+  "Gull_and_seagull": {
+    "class_id": 15,
+    "mid": "/m/01dwxx",
+    "label": "Gull_and_seagull",
+    "search_query": "Gull seagull"
+  },
+  "Conversation": {
+    "class_id": 16,
+    "mid": "/m/01h8n0",
+    "label": "Conversation",
+    "search_query": "Conversation"
+  },
+  "Scratching_(performance_technique)": {
+    "class_id": 17,
+    "mid": "/m/01hgjl",
+    "label": "Scratching_(performance_technique)",
+    "search_query": "Scratching performance technique"
+  },
+  "Ringtone": {
+    "class_id": 18,
+    "mid": "/m/01hnzm",
+    "label": "Ringtone",
+    "search_query": "Ringtone"
+  },
+  "Sneeze": {
+    "class_id": 19,
+    "mid": "/m/01hsr_",
+    "label": "Sneeze",
+    "search_query": "Sneeze"
+  },
+  "Laughter": {
+    "class_id": 20,
+    "mid": "/m/01j3sz",
+    "label": "Laughter",
+    "search_query": "Laughter"
+  },
+  "Toilet_flush": {
+    "class_id": 21,
+    "mid": "/m/01jt3m",
+    "label": "Toilet_flush",
+    "search_query": "Toilet flush"
+  },
+  "Brass_instrument": {
+    "class_id": 22,
+    "mid": "/m/01kcd",
+    "label": "Brass_instrument",
+    "search_query": "Brass instrument"
+  },
+  "Scissors": {
+    "class_id": 23,
+    "mid": "/m/01lsmm",
+    "label": "Scissors",
+    "search_query": "Scissors"
+  },
+  "Computer_keyboard": {
+    "class_id": 24,
+    "mid": "/m/01m2v",
+    "label": "Computer_keyboard",
+    "search_query": "Computer keyboard"
+  },
+  "Printer": {
+    "class_id": 25,
+    "mid": "/m/01m4t",
+    "label": "Printer",
+    "search_query": "Printer"
+  },
+  "Tabla": {
+    "class_id": 26,
+    "mid": "/m/01p970",
+    "label": "Tabla",
+    "search_query": "Tabla"
+  },
+  "Cymbal": {
+    "class_id": 27,
+    "mid": "/m/01qbl",
+    "label": "Cymbal",
+    "search_query": "Cymbal"
+  },
+  "Zipper_(clothing)": {
+    "class_id": 28,
+    "mid": "/m/01s0vc",
+    "label": "Zipper_(clothing)",
+    "search_query": "Zipper clothing"
+  },
+  "Clock": {
+    "class_id": 29,
+    "mid": "/m/01x3z",
+    "label": "Clock",
+    "search_query": "Clock"
+  },
+  "Cat": {
+    "class_id": 30,
+    "mid": "/m/01yrx",
+    "label": "Cat",
+    "search_query": "Cat"
+  },
+  "Bird_vocalization_and_bird_call_and_bird_song": {
+    "class_id": 31,
+    "mid": "/m/020bb7",
+    "label": "Bird_vocalization_and_bird_call_and_bird_song",
+    "search_query": "Bird vocalization bird call bird song"
+  },
+  "Cowbell": {
+    "class_id": 32,
+    "mid": "/m/0239kh",
+    "label": "Cowbell",
+    "search_query": "Cowbell"
+  },
+  "Cutlery_and_silverware": {
+    "class_id": 33,
+    "mid": "/m/023pjk",
+    "label": "Cutlery_and_silverware",
+    "search_query": "Cutlery silverware"
+  },
+  "Coin_(dropping)": {
+    "class_id": 34,
+    "mid": "/m/0242l",
+    "label": "Coin_(dropping)",
+    "search_query": "Coin dropping"
+  },
+  "Finger_snapping": {
+    "class_id": 35,
+    "mid": "/m/025_jnm",
+    "label": "Finger_snapping",
+    "search_query": "Finger snapping"
+  },
+  "Fowl": {
+    "class_id": 36,
+    "mid": "/m/025rv6n",
+    "label": "Fowl",
+    "search_query": "Fowl"
+  },
+  "Wind_chime": {
+    "class_id": 37,
+    "mid": "/m/026fgl",
+    "label": "Wind_chime",
+    "search_query": "Wind chime"
+  },
+  "Drum": {
+    "class_id": 38,
+    "mid": "/m/026t6",
+    "label": "Drum",
+    "search_query": "Drum"
+  },
+  "Applause": {
+    "class_id": 39,
+    "mid": "/m/028ght",
+    "label": "Applause",
+    "search_query": "Applause"
+  },
+  "Fire": {
+    "class_id": 40,
+    "mid": "/m/02_41",
+    "label": "Fire",
+    "search_query": "Fire"
+  },
+  "Fart": {
+    "class_id": 41,
+    "mid": "/m/02_nn",
+    "label": "Fart",
+    "search_query": "Fart"
+  },
+  "Ratchet_and_pawl": {
+    "class_id": 42,
+    "mid": "/m/02bm9n",
+    "label": "Ratchet_and_pawl",
+    "search_query": "Ratchet pawl"
+  },
+  "Door": {
+    "class_id": 43,
+    "mid": "/m/02dgv",
+    "label": "Door",
+    "search_query": "Door"
+  },
+  "Drum_kit": {
+    "class_id": 44,
+    "mid": "/m/02hnl",
+    "label": "Drum_kit",
+    "search_query": "Drum kit"
+  },
+  "Water_tap_and_faucet": {
+    "class_id": 45,
+    "mid": "/m/02jz0l",
+    "label": "Water_tap_and_faucet",
+    "search_query": "Water tap faucet"
+  },
+  "Engine": {
+    "class_id": 46,
+    "mid": "/m/02mk9",
+    "label": "Engine",
+    "search_query": "Engine"
+  },
+  "Whispering": {
+    "class_id": 47,
+    "mid": "/m/02rtxlg",
+    "label": "Whispering",
+    "search_query": "Whispering"
+  },
+  "Electric_guitar": {
+    "class_id": 48,
+    "mid": "/m/02sgy",
+    "label": "Electric_guitar",
+    "search_query": "Electric guitar"
+  },
+  "Mechanical_fan": {
+    "class_id": 49,
+    "mid": "/m/02x984l",
+    "label": "Mechanical_fan",
+    "search_query": "Mechanical fan"
+  },
+  "Sliding_door": {
+    "class_id": 50,
+    "mid": "/m/02y_763",
+    "label": "Sliding_door",
+    "search_query": "Sliding door"
+  },
+  "Purr": {
+    "class_id": 51,
+    "mid": "/m/02yds9",
+    "label": "Purr",
+    "search_query": "Purr"
+  },
+  "Female_speech_and_woman_speaking": {
+    "class_id": 52,
+    "mid": "/m/02zsn",
+    "label": "Female_speech_and_woman_speaking",
+    "search_query": "Female speech woman speaking"
+  },
+  "Typing": {
+    "class_id": 53,
+    "mid": "/m/0316dw",
+    "label": "Typing",
+    "search_query": "Typing"
+  },
+  "Gunshot_and_gunfire": {
+    "class_id": 54,
+    "mid": "/m/032s66",
+    "label": "Gunshot_and_gunfire",
+    "search_query": "Gunshot gunfire"
+  },
+  "Guitar": {
+    "class_id": 55,
+    "mid": "/m/0342h",
+    "label": "Guitar",
+    "search_query": "Guitar"
+  },
+  "Waves_and_surf": {
+    "class_id": 56,
+    "mid": "/m/034srq",
+    "label": "Waves_and_surf",
+    "search_query": "Waves surf"
+  },
+  "Bell": {
+    "class_id": 57,
+    "mid": "/m/0395lw",
+    "label": "Bell",
+    "search_query": "Bell"
+  },
+  "Glass": {
+    "class_id": 58,
+    "mid": "/m/039jq",
+    "label": "Glass",
+    "search_query": "Glass"
+  },
+  "Chewing_and_mastication": {
+    "class_id": 59,
+    "mid": "/m/03cczk",
+    "label": "Chewing_and_mastication",
+    "search_query": "Chewing mastication"
+  },
+  "Bathtub_(filling_or_washing)": {
+    "class_id": 60,
+    "mid": "/m/03dnzn",
+    "label": "Bathtub_(filling_or_washing)",
+    "search_query": "Bathtub filling or washing"
+  },
+  "Siren": {
+    "class_id": 61,
+    "mid": "/m/03kmc9",
+    "label": "Siren",
+    "search_query": "Siren"
+  },
+  "Hammer": {
+    "class_id": 62,
+    "mid": "/m/03l9g",
+    "label": "Hammer",
+    "search_query": "Hammer"
+  },
+  "Harp": {
+    "class_id": 63,
+    "mid": "/m/03m5k",
+    "label": "Harp",
+    "search_query": "Harp"
+  },
+  "Wind": {
+    "class_id": 64,
+    "mid": "/m/03m9d0z",
+    "label": "Wind",
+    "search_query": "Wind"
+  },
+  "Burping_and_eructation": {
+    "class_id": 65,
+    "mid": "/m/03q5_w",
+    "label": "Burping_and_eructation",
+    "search_query": "Burping eructation"
+  },
+  "Screaming": {
+    "class_id": 66,
+    "mid": "/m/03qc9zr",
+    "label": "Screaming",
+    "search_query": "Screaming"
+  },
+  "Harmonica": {
+    "class_id": 67,
+    "mid": "/m/03qjg",
+    "label": "Harmonica",
+    "search_query": "Harmonica"
+  },
+  "Hi-hat": {
+    "class_id": 68,
+    "mid": "/m/03qtq",
+    "label": "Hi-hat",
+    "search_query": "Hi-hat"
+  },
+  "Crowd": {
+    "class_id": 69,
+    "mid": "/m/03qtwd",
+    "label": "Crowd",
+    "search_query": "Crowd"
+  },
+  "Keys_jangling": {
+    "class_id": 70,
+    "mid": "/m/03v3yw",
+    "label": "Keys_jangling",
+    "search_query": "Keys jangling"
+  },
+  "Insect": {
+    "class_id": 71,
+    "mid": "/m/03vt0",
+    "label": "Insect",
+    "search_query": "Insect"
+  },
+  "Church_bell": {
+    "class_id": 72,
+    "mid": "/m/03w41f",
+    "label": "Church_bell",
+    "search_query": "Church bell"
+  },
+  "Doorbell": {
+    "class_id": 73,
+    "mid": "/m/03wwcy",
+    "label": "Doorbell",
+    "search_query": "Doorbell"
+  },
+  "Acoustic_guitar": {
+    "class_id": 74,
+    "mid": "/m/042v_gx",
+    "label": "Acoustic_guitar",
+    "search_query": "Acoustic guitar"
+  },
+  "Crying_and_sobbing": {
+    "class_id": 75,
+    "mid": "/m/0463cq4",
+    "label": "Crying_and_sobbing",
+    "search_query": "Crying sobbing"
+  },
+  "Motorcycle": {
+    "class_id": 76,
+    "mid": "/m/04_sv",
+    "label": "Motorcycle",
+    "search_query": "Motorcycle"
+  },
+  "Dishes_and_pots_and_pans": {
+    "class_id": 77,
+    "mid": "/m/04brg2",
+    "label": "Dishes_and_pots_and_pans",
+    "search_query": "Dishes pots pans"
+  },
+  "Liquid": {
+    "class_id": 78,
+    "mid": "/m/04k94",
+    "label": "Liquid",
+    "search_query": "Liquid"
+  },
+  "Music": {
+    "class_id": 79,
+    "mid": "/m/04rlf",
+    "label": "Music",
+    "search_query": "Music"
+  },
+  "Crow": {
+    "class_id": 80,
+    "mid": "/m/04s8yn",
+    "label": "Crow",
+    "search_query": "Crow"
+  },
+  "Musical_instrument": {
+    "class_id": 81,
+    "mid": "/m/04szw",
+    "label": "Musical_instrument",
+    "search_query": "Musical instrument"
+  },
+  "Keyboard_(musical)": {
+    "class_id": 82,
+    "mid": "/m/05148p4",
+    "label": "Keyboard_(musical)",
+    "search_query": "Keyboard musical"
+  },
+  "Cheering": {
+    "class_id": 83,
+    "mid": "/m/053hz1",
+    "label": "Cheering",
+    "search_query": "Cheering"
+  },
+  "Ocean": {
+    "class_id": 84,
+    "mid": "/m/05kq4",
+    "label": "Ocean",
+    "search_query": "Ocean"
+  },
+  "Packing_tape_and_duct_tape": {
+    "class_id": 85,
+    "mid": "/m/05mxj0q",
+    "label": "Packing_tape_and_duct_tape",
+    "search_query": "Packing tape duct tape"
+  },
+  "Piano": {
+    "class_id": 86,
+    "mid": "/m/05r5c",
+    "label": "Piano",
+    "search_query": "Piano"
+  },
+  "Rattle_(instrument)": {
+    "class_id": 87,
+    "mid": "/m/05r5wn",
+    "label": "Rattle_(instrument)",
+    "search_query": "Rattle instrument"
+  },
+  "Bark": {
+    "class_id": 88,
+    "mid": "/m/05tny_",
+    "label": "Bark",
+    "search_query": "Bark"
+  },
+  "Male_speech_and_man_speaking": {
+    "class_id": 89,
+    "mid": "/m/05zppz",
+    "label": "Male_speech_and_man_speaking",
+    "search_query": "Male speech man speaking"
+  },
+  "Cupboard_open_or_close": {
+    "class_id": 90,
+    "mid": "/m/0642b4",
+    "label": "Cupboard_open_or_close",
+    "search_query": "Cupboard open or close"
+  },
+  "Domestic_animals_and_pets": {
+    "class_id": 91,
+    "mid": "/m/068hy",
+    "label": "Domestic_animals_and_pets",
+    "search_query": "Domestic animals pets"
+  },
+  "Skateboard": {
+    "class_id": 92,
+    "mid": "/m/06_fw",
+    "label": "Skateboard",
+    "search_query": "Skateboard"
+  },
+  "Rail_transport": {
+    "class_id": 93,
+    "mid": "/m/06d_3",
+    "label": "Rail_transport",
+    "search_query": "Rail transport"
+  },
+  "Run": {
+    "class_id": 94,
+    "mid": "/m/06h7j",
+    "label": "Run",
+    "search_query": "Run"
+  },
+  "Rain": {
+    "class_id": 95,
+    "mid": "/m/06mb1",
+    "label": "Rain",
+    "search_query": "Rain"
+  },
+  "Snare_drum": {
+    "class_id": 96,
+    "mid": "/m/06rvn",
+    "label": "Snare_drum",
+    "search_query": "Snare drum"
+  },
+  "Tambourine": {
+    "class_id": 97,
+    "mid": "/m/07brj",
+    "label": "Tambourine",
+    "search_query": "Tambourine"
+  },
+  "Telephone": {
+    "class_id": 98,
+    "mid": "/m/07cx4",
+    "label": "Telephone",
+    "search_query": "Telephone"
+  },
+  "Trumpet": {
+    "class_id": 99,
+    "mid": "/m/07gql",
+    "label": "Trumpet",
+    "search_query": "Trumpet"
+  },
+  "Train": {
+    "class_id": 100,
+    "mid": "/m/07jdr",
+    "label": "Train",
+    "search_query": "Train"
+  },
+  "Tools": {
+    "class_id": 101,
+    "mid": "/m/07k1x",
+    "label": "Tools",
+    "search_query": "Tools"
+  },
+  "Shout": {
+    "class_id": 102,
+    "mid": "/m/07p6fty",
+    "label": "Shout",
+    "search_query": "Shout"
+  },
+  "Fill_(with_liquid)": {
+    "class_id": 103,
+    "mid": "/m/07p7b8y",
+    "label": "Fill_(with_liquid)",
+    "search_query": "Fill with liquid"
+  },
+  "Idling": {
+    "class_id": 104,
+    "mid": "/m/07pb8fc",
+    "label": "Idling",
+    "search_query": "Idling"
+  },
+  "Walk_and_footsteps": {
+    "class_id": 105,
+    "mid": "/m/07pbtc8",
+    "label": "Walk_and_footsteps",
+    "search_query": "Walk footsteps"
+  },
+  "Chirp_and_tweet": {
+    "class_id": 106,
+    "mid": "/m/07pggtn",
+    "label": "Chirp_and_tweet",
+    "search_query": "Chirp tweet"
+  },
+  "Buzz": {
+    "class_id": 107,
+    "mid": "/m/07pjwq1",
+    "label": "Buzz",
+    "search_query": "Buzz"
+  },
+  "Crushing": {
+    "class_id": 108,
+    "mid": "/m/07plct2",
+    "label": "Crushing",
+    "search_query": "Crushing"
+  },
+  "Sigh": {
+    "class_id": 109,
+    "mid": "/m/07plz5l",
+    "label": "Sigh",
+    "search_query": "Sigh"
+  },
+  "Alarm": {
+    "class_id": 110,
+    "mid": "/m/07pp_mv",
+    "label": "Alarm",
+    "search_query": "Alarm"
+  },
+  "Trickle_and_dribble": {
+    "class_id": 111,
+    "mid": "/m/07pqc89",
+    "label": "Trickle_and_dribble",
+    "search_query": "Trickle dribble"
+  },
+  "Pour": {
+    "class_id": 112,
+    "mid": "/m/07prgkl",
+    "label": "Pour",
+    "search_query": "Pour"
+  },
+  "Crackle": {
+    "class_id": 113,
+    "mid": "/m/07pzfmf",
+    "label": "Crackle",
+    "search_query": "Crackle"
+  },
+  "Accelerating_and_revving_and_vroom": {
+    "class_id": 114,
+    "mid": "/m/07q2z82",
+    "label": "Accelerating_and_revving_and_vroom",
+    "search_query": "Accelerating revving vroom"
+  },
+  "Squeak": {
+    "class_id": 115,
+    "mid": "/m/07q6cd_",
+    "label": "Squeak",
+    "search_query": "Squeak"
+  },
+  "Chink_and_clink": {
+    "class_id": 116,
+    "mid": "/m/07q7njn",
+    "label": "Chink_and_clink",
+    "search_query": "Chink clink"
+  },
+  "Screech": {
+    "class_id": 117,
+    "mid": "/m/07q8k13",
+    "label": "Screech",
+    "search_query": "Screech"
+  },
+  "Tap": {
+    "class_id": 118,
+    "mid": "/m/07qcpgn",
+    "label": "Tap",
+    "search_query": "Tap"
+  },
+  "Tearing": {
+    "class_id": 119,
+    "mid": "/m/07qcx4z",
+    "label": "Tearing",
+    "search_query": "Tearing"
+  },
+  "Tick-tock": {
+    "class_id": 120,
+    "mid": "/m/07qjznl",
+    "label": "Tick-tock",
+    "search_query": "Tick-tock"
+  },
+  "Tick": {
+    "class_id": 121,
+    "mid": "/m/07qjznt",
+    "label": "Tick",
+    "search_query": "Tick"
+  },
+  "Rattle": {
+    "class_id": 122,
+    "mid": "/m/07qn4z3",
+    "label": "Rattle",
+    "search_query": "Rattle"
+  },
+  "Thump_and_thud": {
+    "class_id": 123,
+    "mid": "/m/07qnq_y",
+    "label": "Thump_and_thud",
+    "search_query": "Thump thud"
+  },
+  "Boom": {
+    "class_id": 124,
+    "mid": "/m/07qqyl4",
+    "label": "Boom",
+    "search_query": "Boom"
+  },
+  "Meow": {
+    "class_id": 125,
+    "mid": "/m/07qrkrw",
+    "label": "Meow",
+    "search_query": "Meow"
+  },
+  "Crack": {
+    "class_id": 126,
+    "mid": "/m/07qs1cx",
+    "label": "Crack",
+    "search_query": "Crack"
+  },
+  "Truck": {
+    "class_id": 127,
+    "mid": "/m/07r04",
+    "label": "Truck",
+    "search_query": "Truck"
+  },
+  "Raindrop": {
+    "class_id": 128,
+    "mid": "/m/07r10fb",
+    "label": "Raindrop",
+    "search_query": "Raindrop"
+  },
+  "Knock": {
+    "class_id": 129,
+    "mid": "/m/07r4wb8",
+    "label": "Knock",
+    "search_query": "Knock"
+  },
+  "Drip": {
+    "class_id": 130,
+    "mid": "/m/07r5v4s",
+    "label": "Drip",
+    "search_query": "Drip"
+  },
+  "Giggle": {
+    "class_id": 131,
+    "mid": "/m/07r660_",
+    "label": "Giggle",
+    "search_query": "Giggle"
+  },
+  "Chuckle_and_chortle": {
+    "class_id": 132,
+    "mid": "/m/07rgt08",
+    "label": "Chuckle_and_chortle",
+    "search_query": "Chuckle chortle"
+  },
+  "Hiss": {
+    "class_id": 133,
+    "mid": "/m/07rjwbb",
+    "label": "Hiss",
+    "search_query": "Hiss"
+  },
+  "Slam": {
+    "class_id": 134,
+    "mid": "/m/07rjzl8",
+    "label": "Slam",
+    "search_query": "Slam"
+  },
+  "Chatter": {
+    "class_id": 135,
+    "mid": "/m/07rkbfh",
+    "label": "Chatter",
+    "search_query": "Chatter"
+  },
+  "Shatter": {
+    "class_id": 136,
+    "mid": "/m/07rn7sz",
+    "label": "Shatter",
+    "search_query": "Shatter"
+  },
+  "Whoosh_and_swoosh_and_swish": {
+    "class_id": 137,
+    "mid": "/m/07rqsjt",
+    "label": "Whoosh_and_swoosh_and_swish",
+    "search_query": "Whoosh swoosh swish"
+  },
+  "Splash_and_splatter": {
+    "class_id": 138,
+    "mid": "/m/07rrlb6",
+    "label": "Splash_and_splatter",
+    "search_query": "Splash splatter"
+  },
+  "Gasp": {
+    "class_id": 139,
+    "mid": "/m/07s0dtb",
+    "label": "Gasp",
+    "search_query": "Gasp"
+  },
+  "Strum": {
+    "class_id": 140,
+    "mid": "/m/07s0s5r",
+    "label": "Strum",
+    "search_query": "Strum"
+  },
+  "Yell": {
+    "class_id": 141,
+    "mid": "/m/07sr1lc",
+    "label": "Yell",
+    "search_query": "Yell"
+  },
+  "Gurgling": {
+    "class_id": 142,
+    "mid": "/m/07swgks",
+    "label": "Gurgling",
+    "search_query": "Gurgling"
+  },
+  "Vehicle": {
+    "class_id": 143,
+    "mid": "/m/07yv9",
+    "label": "Vehicle",
+    "search_query": "Vehicle"
+  },
+  "Writing": {
+    "class_id": 144,
+    "mid": "/m/081rb",
+    "label": "Writing",
+    "search_query": "Writing"
+  },
+  "Water": {
+    "class_id": 145,
+    "mid": "/m/0838f",
+    "label": "Water",
+    "search_query": "Water"
+  },
+  "Wood": {
+    "class_id": 146,
+    "mid": "/m/083vt",
+    "label": "Wood",
+    "search_query": "Wood"
+  },
+  "Wind_instrument_and_woodwind_instrument": {
+    "class_id": 147,
+    "mid": "/m/085jw",
+    "label": "Wind_instrument_and_woodwind_instrument",
+    "search_query": "Wind instrument woodwind instrument"
+  },
+  "Vehicle_horn_and_car_horn_and_honking": {
+    "class_id": 148,
+    "mid": "/m/0912c9",
+    "label": "Vehicle_horn_and_car_horn_and_honking",
+    "search_query": "Vehicle horn car horn honking"
+  },
+  "Chicken_and_rooster": {
+    "class_id": 149,
+    "mid": "/m/09b5t",
+    "label": "Chicken_and_rooster",
+    "search_query": "Chicken rooster"
+  },
+  "Respiratory_sounds": {
+    "class_id": 150,
+    "mid": "/m/09hlz4",
+    "label": "Respiratory_sounds",
+    "search_query": "Respiratory sounds"
+  },
+  "Human_voice": {
+    "class_id": 151,
+    "mid": "/m/09l8g",
+    "label": "Human_voice",
+    "search_query": "Human voice"
+  },
+  "Frog": {
+    "class_id": 152,
+    "mid": "/m/09ld4",
+    "label": "Frog",
+    "search_query": "Frog"
+  },
+  "Speech": {
+    "class_id": 153,
+    "mid": "/m/09x0r",
+    "label": "Speech",
+    "search_query": "Speech"
+  },
+  "Cricket": {
+    "class_id": 154,
+    "mid": "/m/09xqv",
+    "label": "Cricket",
+    "search_query": "Cricket"
+  },
+  "Power_tool": {
+    "class_id": 155,
+    "mid": "/m/0_ksk",
+    "label": "Power_tool",
+    "search_query": "Power tool"
+  },
+  "Bass_drum": {
+    "class_id": 156,
+    "mid": "/m/0bm02",
+    "label": "Bass_drum",
+    "search_query": "Bass drum"
+  },
+  "Crash_cymbal": {
+    "class_id": 157,
+    "mid": "/m/0bm0k",
+    "label": "Crash_cymbal",
+    "search_query": "Crash cymbal"
+  },
+  "Speech_synthesizer": {
+    "class_id": 158,
+    "mid": "/m/0brhx",
+    "label": "Speech_synthesizer",
+    "search_query": "Speech synthesizer"
+  },
+  "Dog": {
+    "class_id": 159,
+    "mid": "/m/0bt9lr",
+    "label": "Dog",
+    "search_query": "Dog"
+  },
+  "Traffic_noise_and_roadway_noise": {
+    "class_id": 160,
+    "mid": "/m/0btp2",
+    "label": "Traffic_noise_and_roadway_noise",
+    "search_query": "Traffic noise roadway noise"
+  },
+  "Typewriter": {
+    "class_id": 161,
+    "mid": "/m/0c2wf",
+    "label": "Typewriter",
+    "search_query": "Typewriter"
+  },
+  "Livestock_and_farm_animals_and_working_animals": {
+    "class_id": 162,
+    "mid": "/m/0ch8v",
+    "label": "Livestock_and_farm_animals_and_working_animals",
+    "search_query": "Livestock farm animals working animals"
+  },
+  "Fixed-wing_aircraft_and_airplane": {
+    "class_id": 163,
+    "mid": "/m/0cmf2",
+    "label": "Fixed-wing_aircraft_and_airplane",
+    "search_query": "Fixed-wing aircraft airplane"
+  },
+  "Boiling": {
+    "class_id": 164,
+    "mid": "/m/0dv3j",
+    "label": "Boiling",
+    "search_query": "Boiling"
+  },
+  "Camera": {
+    "class_id": 165,
+    "mid": "/m/0dv5r",
+    "label": "Camera",
+    "search_query": "Camera"
+  },
+  "Marimba_and_xylophone": {
+    "class_id": 166,
+    "mid": "/m/0dwsp",
+    "label": "Marimba_and_xylophone",
+    "search_query": "Marimba xylophone"
+  },
+  "Glockenspiel": {
+    "class_id": 167,
+    "mid": "/m/0dwtp",
+    "label": "Glockenspiel",
+    "search_query": "Glockenspiel"
+  },
+  "Frying_(food)": {
+    "class_id": 168,
+    "mid": "/m/0dxrf",
+    "label": "Frying_(food)",
+    "search_query": "Frying food"
+  },
+  "Chime": {
+    "class_id": 169,
+    "mid": "/m/0f8s22",
+    "label": "Chime",
+    "search_query": "Chime"
+  },
+  "Drawer_open_or_close": {
+    "class_id": 170,
+    "mid": "/m/0fqfqc",
+    "label": "Drawer_open_or_close",
+    "search_query": "Drawer open or close"
+  },
+  "Plucked_string_instrument": {
+    "class_id": 171,
+    "mid": "/m/0fx80y",
+    "label": "Plucked_string_instrument",
+    "search_query": "Plucked string instrument"
+  },
+  "Microwave_oven": {
+    "class_id": 172,
+    "mid": "/m/0fx9l",
+    "label": "Microwave_oven",
+    "search_query": "Microwave oven"
+  },
+  "Fireworks": {
+    "class_id": 173,
+    "mid": "/m/0g6b5",
+    "label": "Fireworks",
+    "search_query": "Fireworks"
+  },
+  "Growling": {
+    "class_id": 174,
+    "mid": "/m/0ghcn6",
+    "label": "Growling",
+    "search_query": "Growling"
+  },
+  "Bicycle_bell": {
+    "class_id": 175,
+    "mid": "/m/0gy1t2s",
+    "label": "Bicycle_bell",
+    "search_query": "Bicycle bell"
+  },
+  "Mallet_percussion": {
+    "class_id": 176,
+    "mid": "/m/0j45pbj",
+    "label": "Mallet_percussion",
+    "search_query": "Mallet percussion"
+  },
+  "Stream": {
+    "class_id": 177,
+    "mid": "/m/0j6m2",
+    "label": "Stream",
+    "search_query": "Stream"
+  },
+  "Thunderstorm": {
+    "class_id": 178,
+    "mid": "/m/0jb2l",
+    "label": "Thunderstorm",
+    "search_query": "Thunderstorm"
+  },
+  "Animal": {
+    "class_id": 179,
+    "mid": "/m/0jbk",
+    "label": "Animal",
+    "search_query": "Animal"
+  },
+  "Car": {
+    "class_id": 180,
+    "mid": "/m/0k4j",
+    "label": "Car",
+    "search_query": "Car"
+  },
+  "Aircraft": {
+    "class_id": 181,
+    "mid": "/m/0k5j",
+    "label": "Aircraft",
+    "search_query": "Aircraft"
+  },
+  "Hands": {
+    "class_id": 182,
+    "mid": "/m/0k65p",
+    "label": "Hands",
+    "search_query": "H s"
+  },
+  "Bowed_string_instrument": {
+    "class_id": 183,
+    "mid": "/m/0l14_3",
+    "label": "Bowed_string_instrument",
+    "search_query": "Bowed string instrument"
+  },
+  "Percussion": {
+    "class_id": 184,
+    "mid": "/m/0l14md",
+    "label": "Percussion",
+    "search_query": "Percussion"
+  },
+  "Clapping": {
+    "class_id": 185,
+    "mid": "/m/0l15bq",
+    "label": "Clapping",
+    "search_query": "Clapping"
+  },
+  "Race_car_and_auto_racing": {
+    "class_id": 186,
+    "mid": "/m/0ltv",
+    "label": "Race_car_and_auto_racing",
+    "search_query": "Race car auto racing"
+  },
+  "Breathing": {
+    "class_id": 187,
+    "mid": "/m/0lyf6",
+    "label": "Breathing",
+    "search_query": "Breathing"
+  },
+  "Gong": {
+    "class_id": 188,
+    "mid": "/m/0mbct",
+    "label": "Gong",
+    "search_query": "Gong"
+  },
+  "Accordion": {
+    "class_id": 189,
+    "mid": "/m/0mkg",
+    "label": "Accordion",
+    "search_query": "Accordion"
+  },
+  "Thunder": {
+    "class_id": 190,
+    "mid": "/m/0ngt1",
+    "label": "Thunder",
+    "search_query": "Thunder"
+  },
+  "Child_speech_and_kid_speaking": {
+    "class_id": 191,
+    "mid": "/m/0ytgt",
+    "label": "Child_speech_and_kid_speaking",
+    "search_query": "Child speech kid speaking"
+  },
+  "Male_singing": {
+    "class_id": 192,
+    "mid": "/t/dd00003",
+    "label": "Male_singing",
+    "search_query": "Male singing"
+  },
+  "Female_singing": {
+    "class_id": 193,
+    "mid": "/t/dd00004",
+    "label": "Female_singing",
+    "search_query": "Female singing"
+  },
+  "Human_sounds": {
+    "class_id": 194,
+    "mid": "/t/dd00012",
+    "label": "Human_sounds",
+    "search_query": "Human sounds"
+  },
+  "Domestic_sounds_and_home_sounds": {
+    "class_id": 195,
+    "mid": "/t/dd00071",
+    "label": "Domestic_sounds_and_home_sounds",
+    "search_query": "Domestic sounds home sounds"
+  },
+  "Mechanisms": {
+    "class_id": 196,
+    "mid": "/t/dd00077",
+    "label": "Mechanisms",
+    "search_query": "Mechanisms"
+  },
+  "Crumpling_and_crinkling": {
+    "class_id": 197,
+    "mid": "/t/dd00112",
+    "label": "Crumpling_and_crinkling",
+    "search_query": "Crumpling crinkling"
+  },
+  "Engine_starting": {
+    "class_id": 198,
+    "mid": "/t/dd00130",
+    "label": "Engine_starting",
+    "search_query": "Engine starting"
+  },
+  "Car_passing_by": {
+    "class_id": 199,
+    "mid": "/t/dd00134",
+    "label": "Car_passing_by",
+    "search_query": "Car passing by"
+  }
+}
