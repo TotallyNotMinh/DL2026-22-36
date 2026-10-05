@@ -87,17 +87,18 @@ class Classifer(nn.Module):
             self.dropout = nn.Dropout(dropout)
             self.head = nn.Linear(feat_dim, num_classes)
 
-        elif self.encoder_type in ("efficientnet", "efficientnet_b0", "efficientnet-b0"):
+        elif self.encoder_type in ("efficientnet", "efficientnet_b0", "efficientnet-b0", "efficientnet_b4", "efficientnet-b4"):
             self.encoder = EfficientNetEncoder(
+                model_name=self.encoder_type,
                 pretrained=pretrained_dino,
                 in_channels=c_in,
             )
             feat_dim = self.encoder.out_dim
-            self.head_norm = nn.LayerNorm(feat_dim, eps=1e-6)
+            self.head_norm = None
             self.dropout = nn.Dropout(dropout)
             self.head = nn.Linear(feat_dim, num_classes)
         else:
-            raise ValueError(f"Unknown encoder_type: '{encoder_type}'. Choose from ['ast', 'resnet18', 'resnet34', 'efficientnet_b0']")
+            raise ValueError(f"Unknown encoder_type: '{encoder_type}'. Choose from ['ast', 'resnet18', 'resnet34', 'efficientnet_b0', 'efficientnet_b4']")
 
     def forward(self, x, return_features: bool = False):
         # x: (B, 1, 128, target_frames)
@@ -128,10 +129,11 @@ class Classifer(nn.Module):
             pooled = self.dropout(pooled)
             logits = self.head(pooled)
 
-        elif self.encoder_type in ("efficientnet", "efficientnet_b0", "efficientnet-b0"):
+        elif self.encoder_type in ("efficientnet", "efficientnet_b0", "efficientnet-b0", "efficientnet_b4", "efficientnet-b4"):
             feat_map = self.encoder(x)        # (B, 1280, H, W)
             pooled = feat_map.mean(dim=(-2, -1))
-            pooled = self.head_norm(pooled)
+            if self.head_norm is not None:
+                pooled = self.head_norm(pooled)
             features = pooled
             pooled = self.dropout(pooled)
             logits = self.head(pooled)

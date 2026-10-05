@@ -1,17 +1,24 @@
 import torch
 import torch.nn as nn
-from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+import torchvision.models as tv_models
 
 class EfficientNetEncoder(nn.Module):
     """
-    EfficientNet-B0 backbone for audio spectrogram feature extraction.
+    EfficientNet (B0 or B4) backbone for audio spectrogram feature extraction.
     Adapts first conv layer to accept 1-channel (or in_channels) spectrograms
     while preserving ImageNet pretrained weights via channel averaging.
     """
-    def __init__(self, pretrained: bool = True, in_channels: int = 1):
+    def __init__(self, model_name: str = "efficientnet_b0", pretrained: bool = True, in_channels: int = 1):
         super().__init__()
-        weights = EfficientNet_B0_Weights.DEFAULT if pretrained else None
-        backbone = efficientnet_b0(weights=weights)
+        model_name = model_name.lower().replace("-", "_")
+        if model_name in ("efficientnet_b4", "b4"):
+            weights = tv_models.EfficientNet_B4_Weights.DEFAULT if pretrained else None
+            backbone = tv_models.efficientnet_b4(weights=weights)
+            self.out_dim = 1792
+        else:
+            weights = tv_models.EfficientNet_B0_Weights.DEFAULT if pretrained else None
+            backbone = tv_models.efficientnet_b0(weights=weights)
+            self.out_dim = 1280
         
         if in_channels != 3:
             old_conv = backbone.features[0][0]
@@ -29,7 +36,6 @@ class EfficientNetEncoder(nn.Module):
             backbone.features[0][0] = new_conv
 
         self.features = backbone.features
-        self.out_dim = 1280
 
     def forward(self, x: torch.Tensor):
         # x: (B, in_channels, Freq, Time)
