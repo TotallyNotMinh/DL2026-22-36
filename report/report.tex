@@ -222,10 +222,10 @@ All comparative evaluations are conducted on the official, held-out FSD50K evalu
 \end{enumerate}
 
 \subsubsection{Optimization Regimes Across Architectural Families}
-Both CNN and Vision Transformer architectures are trained for 30 epochs with AdamW optimization ($\beta_1=0.9, \beta_2=0.999$, weight decay $10^{-4}$), multi-label BCEWithLogitsLoss, label smoothing ($0.1$), and the \texttt{ast\_step} decay schedule (5 epochs constant initial LR, followed by $0.90\times$ decay per epoch). However, base learning rates are tailored to each architectural family's inductive dynamics:
+Both CNN and Vision Transformer architectures are trained for 30 epochs with AdamW optimization ($\beta_1=0.9, \beta_2=0.999$, weight decay $10^{-4}$), multi-label BCEWithLogitsLoss, label smoothing ($0.1$), and the \texttt{ast\_step} decay schedule (5 epochs constant initial LR, followed by $0.90\times$ decay per epoch). However, base learning rates are tailored to each architectural family's inductive dynamics, following established cross-model audio benchmarking literature such as CMKD (Cross-Model Knowledge Distillation)~\cite{gong2022cmkd}:
 \begin{itemize}
-    \item \textbf{CNN Baselines ($\eta = 5 \times 10^{-4}$):} Convolutional networks benefit from higher initial learning rates to rapidly optimize spatial filter banks and inverted bottleneck projection layers.
-    \item \textbf{Audio Spectrogram Transformers ($\eta = 5 \times 10^{-5}$):} Vision Transformers require a $10\times$ smaller learning rate. Self-attention dot-product layers and pre-trained patch projection matrices are acutely sensitive to large gradient steps; learning rates $\ge 10^{-4}$ induce gradient instability and catastrophic forgetting of ImageNet patch representations.
+    \item \textbf{CNN Baselines ($\eta = 5 \times 10^{-4}$):} Convolutional networks benefit from higher initial learning rates to rapidly optimize localized spatial filter banks and inverted residual bottleneck projection layers.
+    \item \textbf{Audio Spectrogram Transformers ($\eta = 5 \times 10^{-5}$):} As demonstrated in AST~\cite{gong2021ast} and CMKD~\cite{gong2022cmkd}, Vision Transformers require an order-of-magnitude ($10\times$) smaller learning rate than convolutional baselines. Self-attention dot-product layers and pre-trained patch projection matrices are acutely sensitive to large gradient steps; learning rates $\ge 10^{-4}$ induce gradient instability and catastrophic forgetting of ImageNet patch representations.
 \end{itemize}
 
 % =========================================================================
@@ -621,6 +621,9 @@ J.~Eaton, N.~D.~Gaubitch, A.~H.~Moore, and P.~A.~Naylor, ``The ACE challenge---c
 
 \bibitem{schroeder1962natural}
 M.~R.~Schroeder, ``Natural sounding artificial reverberation,'' \emph{J. Audio Eng. Soc.}, vol.~10, no.~3, pp. 219--223, 1962.
+
+\bibitem{gong2022cmkd}
+Y.~Gong, S.~Khurana, A.~Rouditchenko, and J.~Glass, ``CMKD: CNN/Transformer-based cross-model knowledge distillation for audio classification,'' \emph{IEEE/ACM Trans. Audio, Speech, Lang. Process.}, 2022, arXiv:2203.06760.
 
 \end{thebibliography}
 
