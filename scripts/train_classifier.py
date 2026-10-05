@@ -56,9 +56,11 @@ parser.add_argument("--colored-noise-max-snr", type=float, default=20.0, help="M
 parser.add_argument("--reverb-prob", type=float, default=0.3, help="Probability of applying synthetic room reverberation")
 parser.add_argument("--reverb-min-t60", type=float, default=0.15, help="Minimum decay time T60 in seconds for reverberation")
 parser.add_argument("--reverb-max-t60", type=float, default=0.6, help="Maximum decay time T60 in seconds for reverberation")
+parser.add_argument("--encoder", type=str, default="ast", choices=["ast", "resnet18", "resnet34", "efficientnet_b0"], help="Backbone encoder architecture: ast (default), resnet18, resnet34, efficientnet_b0")
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
 parser.add_argument("--no-cls-dist", action="store_true", help="Disable CLS+DIST dual token pooling (fall back to mean pooling)")
+parser.add_argument("--pooling", type=str, default=None, choices=[None, "gap", "gap_max", "attention"], help="Pooling strategy: None (baseline dual-token CLS+DIST), gap, gap_max, or attention")
 parser.add_argument("--lr-scheduler", type=str, default="ast_step", choices=["ast_step", "cosine"], help="LR scheduler: ast_step (decay 0.90 after epoch 5) or cosine")
 
 ARCH_CONFIGS = {
@@ -277,21 +279,31 @@ def train():
 
     # ============== Model Initialization ==============
     arch_cfg = ARCH_CONFIGS[args.arch]
-    model = Classifer(
-        tok_dim=arch_cfg["tok_dim"],
-        num_classes=NUM_CLASSES,
-        c_in=1,
-        overlap=6,
-        patch_size=16,
-        size=(128, args.target_frames),
-        num_head=arch_cfg["num_head"],
-        num_layer=arch_cfg["num_layer"],
-        pretrained_dino=(not args.no_dino and args.pretrained_encoder is None),
-        use_cls_dist=not args.no_cls_dist,
-    ).to(device)
+    if args.encoder == "ast":
+        model = Classifer(
+            encoder_type="ast",
+            tok_dim=arch_cfg["tok_dim"],
+            num_classes=NUM_CLASSES,
+            c_in=1,
+            overlap=6,
+            patch_size=16,
+            size=(128, args.target_frames),
+            num_head=arch_cfg["num_head"],
+            num_layer=arch_cfg["num_layer"],
+            pretrained_dino=(not args.no_dino and args.pretrained_encoder is None),
+            use_cls_dist=not args.no_cls_dist,
+            pooling=args.pooling,
+        ).to(device)
+    else:
+        model = Classifer(
+            encoder_type=args.encoder,
+            num_classes=NUM_CLASSES,
+            c_in=1,
+            pretrained_dino=(not args.no_dino),
+        ).to(device)
 
     # Load pretrained encoder weights if supplied
-    load_pretrained_encoder_weights(model, args.pretrained_encoder, device, arch_name=arch_cfg["name"], is_main=is_main)
+    load_pretrained_encoder_weights(model, args.pretrained_encoder, device, arch_name=args.encoder if args.encoder != "ast" else arch_cfg["name"], is_main=is_main)
 
     # Freeze encoder parameters if linear probe requested
     raw_model = model.module if hasattr(model, "module") else model

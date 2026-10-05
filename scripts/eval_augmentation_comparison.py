@@ -306,6 +306,12 @@ def parse_args():
         help="Comma-separated evaluation conditions to test",
     )
     parser.add_argument(
+        "--noisy-data-dir",
+        type=str,
+        default=None,
+        help="Directory containing synthesized noisy evaluation audio (e.g. data/evaluation_fsd50k or /kaggle/input/.../evaluation_fsd50k)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default="cuda" if torch.cuda.is_available() else "cpu",
@@ -323,6 +329,7 @@ def main():
     print("=" * 80)
     print(f"Device        : {device} ({torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'})")
     print(f"Data Root     : {args.data_path}")
+    print(f"Noisy Dir     : {args.noisy_data_dir or 'Auto-discover'}")
     print(f"Checkpoint Dir: {args.checkpoint_dir}")
     print(f"Metadata Path : {args.metadata_path}")
     print(f"Output Dir    : {args.output_dir}")
@@ -488,18 +495,56 @@ def main():
     clean_paths = [str(clean_audio_dir / f"{fname}.wav") for fname in clean_eval_df["fname"]]
     clean_labels = clean_eval_df["labels"].tolist()
 
-    # 2. Noisy ACE metadata
+    # 2. Noisy ACE metadata and directory discovery
     meta_csv_path = Path(args.metadata_path)
     if not meta_csv_path.is_file():
         meta_csv_path = PROJECT_ROOT / "metadata" / "fsd50k_evaluation_metadata.csv"
 
     noisy_meta_df = pd.read_csv(meta_csv_path) if meta_csv_path.is_file() else None
 
+    noisy_dir_candidates = [
+        Path(args.noisy_data_dir) if args.noisy_data_dir else None,
+        data_root / "evaluation_fsd50k",
+        data_root.parent / "evaluation_fsd50k",
+        PROJECT_ROOT / "data" / "evaluation_fsd50k",
+        PROJECT_ROOT / "evaluation_fsd50k",
+    ]
+    kaggle_input = Path("/kaggle/input")
+    if kaggle_input.is_dir():
+        for d in kaggle_input.iterdir():
+            if d.is_dir():
+                noisy_dir_candidates.append(d / "evaluation_fsd50k")
+                noisy_dir_candidates.append(d / "data" / "evaluation_fsd50k")
+
+    detected_noisy_dir = None
+    for cand_dir in noisy_dir_candidates:
+        if cand_dir and cand_dir.is_dir():
+            detected_noisy_dir = cand_dir
+            break
+
+    if detected_noisy_dir:
+        print(f"Resolved noisy evaluation directory: {detected_noisy_dir}")
+    else:
+        print("Notice: No dedicated noisy evaluation directory detected. Will attempt standard relative paths.")
+
     active_conditions = [c.strip() for c in args.conditions.split(",") if c.strip()]
     noise_results = []
+    noise_csv = output_dir / "augmentation_noise_robustness.csv"
+    if noise_csv.is_file():
+        try:
+            existing_df = pd.read_csv(noise_csv)
+            noise_results = existing_df.to_dict(orient="records")
+            print(f"Loaded {len(noise_results)} existing result rows from {noise_csv.name}")
+        except Exception:
+            noise_results = []
 
     for cond in active_conditions:
         print(f"\n--> Evaluating Condition: {cond.upper()}...")
+        existing_models_for_cond = {r["model"] for r in noise_results if r.get("condition") == cond}
+        if set(loaded_models.keys()).issubset(existing_models_for_cond):
+            print(f"  [i] Condition '{cond}' already evaluated in {noise_csv.name}, skipping.")
+            continue
+
         if cond == "clean":
             cond_paths = clean_paths
             cond_labels = clean_labels
@@ -510,14 +555,42 @@ def main():
             sub = noisy_meta_df[noisy_meta_df["condition"] == cond]
             # Resolve paths
             cond_paths = []
+            missing_paths = []
             for p in sub["output_path"]:
-                cand = Path(p)
-                if not cand.is_file():
-                    cand = PROJECT_ROOT / p
-                if not cand.is_file():
-                    cand = data_root.parent / p
-                cond_paths.append(str(cand))
-            cond_labels = sub["labels"].tolist()
+                cand = None
+                p_rel = p.replace("data/evaluation_fsd50k/", "")
+                candidates = []
+                if detected_noisy_dir:
+                    candidates.extend([
+                        detected_noisy_dir / p_rel,
+                        detected_noisy_dir / p,
+                        detected_noisy_dir / cond / Path(p).name,
+                    ])
+                candidates.extend([
+                    Path(p),
+                    PROJECT_ROOT / p,
+                    PROJECT_ROOT / "data" / p,
+                    data_root / p,
+                    data_root.parent / p,
+                ])
+                for c in candidates:
+                    if c.is_file():
+                        cand = c
+                        break
+                if cand is not None:
+                    cond_paths.append(str(cand))
+                else:
+                    missing_paths.append(p)
+
+            if missing_paths:
+                print(f"  [!] Condition '{cond}': {len(missing_paths)}/{len(sub)} audio files not found.")
+                if len(cond_paths) == 0:
+                    print(f"  [!] Skipping condition '{cond}' because no audio files exist.")
+                    continue
+                else:
+                    print(f"  [!] Evaluating on {len(cond_paths)} available files.")
+
+            cond_labels = sub["labels"].tolist()[: len(cond_paths)]
 
         cond_dataset = EvalAudioDataset(cond_paths, cond_labels, class_to_idx)
         cond_loader = DataLoader(
@@ -562,6 +635,12 @@ def main():
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
+        # Incremental saving after each condition completes
+        noise_df = pd.DataFrame(noise_results)
+        noise_df.to_csv(noise_csv, index=False)
+        with open(output_dir / "augmentation_noise_robustness.json", "w", encoding="utf-8") as f:
+            json.dump(noise_results, f, indent=2)
 
     if noise_results:
         noise_df = pd.DataFrame(noise_results)

@@ -147,10 +147,10 @@ python scripts/inference.py \
 
 | Member | Role | Core Deliverable |
 | :--- | :--- | :--- |
-| **Đào Chí Trung** | CNN Baselines | EfficientNet-B0 and B4 baselines, model complexity profiling |
-| **Phạm Hồng Vân** | CNN Baselines | ResNet-18 and ResNet-34 baselines, model profiling and evaluation |
-| **Vũ Thị Kim Oanh** | Augmentation Ablations | SpecAugment vs. Mixup 6-way ablation study |
-| **Nguyễn Thị Ngọc Ánh** | Classification Layer Ablation | Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens |
-| **Phạm Gia Anh** | Model Scaling Comparison | ViT-Tiny vs. ViT-Small architecture comparison and FLOP/latency profiling |
-| **Nguyễn Khải Minh** | Dataset Engineering & Documentation | ACE noise benchmark synthesis, FSD50K EDA, `DATA.md` |
-| **Đặng Nhật Minh** | Pretraining, Robustness Pipeline | Self-supervised ACAD pretraining, DSP colored noise & reverb, benchmark pipeline |
+| **Dao Chi Trung** | CNN Baselines | EfficientNet-B0 and B4 baselines, model complexity profiling |
+| **Pham Hong Van** | CNN Baselines | ResNet-18 and ResNet-34 baselines, model profiling and evaluation |
+| **Vu Thi Kim Oanh** | Augmentation Ablations | SpecAugment vs. Mixup 6-way ablation study |
+| **Nguyen Thi Ngoc Anh** | Classification Layer Ablation | Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens |
+| **Pham Gia Anh** | Model Scaling Comparison | ViT-Tiny vs. ViT-Small architecture comparison and FLOP/latency profiling |
+| **Nguyen Khai Minh** | Dataset Engineering & Documentation | ACE noise benchmark synthesis, FSD50K EDA, `DATA.md` |
+| **Dang Nhat Minh** | Robustness Pipeline | Algorithmic DSP colored noise & reverb augmentations, benchmark evaluation pipeline |

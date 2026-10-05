@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size for evaluation")
     parser.add_argument("--num-workers", type=int, default=4, help="DataLoader worker processes")
     parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="Model architecture")
+    parser.add_argument("--pooling", type=str, default=None, choices=[None, "gap", "gap_max", "attention"], help="Pooling strategy: None (baseline dual-token CLS+DIST), gap, gap_max, or attention")
     parser.add_argument("--duration-sec", type=float, default=10.0, help="Audio duration in seconds")
     parser.add_argument("--target-frames", type=int, default=1000, help="Spectrogram target frames")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device")
@@ -100,6 +101,7 @@ def main():
         num_layer=arch_cfg["num_layer"],
         pretrained_dino=False,
         use_cls_dist=True,
+        pooling=args.pooling,
     ).to(device)
 
     # Load checkpoint
