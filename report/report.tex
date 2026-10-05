@@ -318,9 +318,9 @@ SNR -5 dB & 0.2040 & \textbf{0.3037} & $+48.9\%$ & 45.45\% \\
 }
 \end{table}
 
-As detailed in Table~\ref{tab:dsp_noise_gain}, physics-informed DSP augmentation provides massive, monotonically increasing relative improvements as acoustic severity worsens, lifting $-5\text{ dB}$ mAP from $0.2040$ to $0.3037$ ($+48.9\%$ relative gain). Notably, the robust ViT-Tiny ($0.3037$ mAP) decisively surpasses every undefended model in Table~\ref{tab:arch_noise_degradation}, including EfficientNet-B4 ($0.2613$) and ResNet-34 ($0.2251$). 
+As detailed in Table~\ref{tab:dsp_noise_gain}, physics-informed DSP augmentation provides massive, monotonically increasing relative improvements over the baseline ViT-Tiny as acoustic severity worsens, lifting $-5\text{ dB}$ mAP from $0.2040$ to $0.3037$ ($+48.9\%$ relative gain) and preserving strong clean accuracy ($0.5307$ mAP). 
 
-\noindent\textbf{Critical Scope and Limitation:} We explicitly emphasize that DSP noise defense was evaluated on the ViT-Tiny anchor architecture under our compute budget. Because CNNs were not retrained with the identical DSP noise pipeline, this gain must be attributed to the data augmentation strategy rather than an architectural superiority over CNNs; we cannot conclusively state whether CNNs would derive equivalent or greater percentage gains without retraining them under the full DSP pipeline.
+\noindent\textbf{Critical Scope and Limitation:} We strictly restrict this comparison to the identical ViT-Tiny backbone to isolate the augmentation effect. Because the baseline CNNs in Table~\ref{tab:arch_noise_degradation} were trained without DSP augmentations under a standard recipe, they must not be conflated with DSP-trained models. This gain illustrates the efficacy of physics-informed acoustic data synthesis rather than an intrinsic architectural advantage over convolutional networks; verifying whether CNNs would derive proportional gains would require retraining them under the identical DSP pipeline.
 
 \subsection{Proposed Final Model: Robust ViT-Tiny (+DSP Synergy)}
 \label{sec:final_model}
