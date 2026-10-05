@@ -18,9 +18,15 @@ This document specifies the datasets, splits, preprocessing pipelines, acoustic 
   * Task: Multi-label sound event classification.
 
 ### 1.2 Acoustic Noise Benchmark: ACE Dataset (Acoustic Characterization of Environments)
+* **Official Website & Corpus Link:** [ACE Challenge - Imperial College London](http://ee.ic.ac.uk/naylor/ACEweb/index.html)
 * **Official Reference:** Eaton et al., "The ACE Challenge – Corpus Description and Performance Evaluation", IEEE/ACM Transactions on Audio, Speech, and Language Processing, 2016.
 * **Dataset Version:** 1.0 (ACE Corpus)
-* **Description:** Diverse real-world ambient background noises captured across various real acoustic environments. Used to construct the standardized evaluation benchmark across 4 calibrated Signal-to-Noise Ratio (SNR) levels (+10 dB, +5 dB, 0 dB, -5 dB) on the 10,231 FSD50K evaluation clips.
+* **Noise Types & Environments:** Real-world ambient background noises captured across physical indoor rooms (offices, lecture rooms, meeting rooms) containing genuine HVAC ventilation fans, ambient human speech babble, and computer cooling equipment.
+* **Noise Matching & Calibration Protocol:**
+  * Each clean FSD50K evaluation clip ($10,231$ clips, $10.0\text{ s}$ duration) is paired with a randomly selected continuous noise segment from the ACE corpus.
+  * Root-Mean-Square (RMS) power is calculated for both clean signal $x(t)$ and noise segment $n(t)$.
+  * Noise scaling factor is calibrated to achieve the exact target SNR: $\sigma_{\text{noise}} = \frac{\text{RMS}(x)}{\text{RMS}(n) \cdot 10^{\text{SNR}/20}}$.
+  * Four standardized SNR tiers are generated: $+10\text{ dB}$, $+5\text{ dB}$, $0\text{ dB}$, and $-5\text{ dB}$ ($40,924$ corrupted evaluation audio files manifest in `metadata/fsd50k_evaluation_metadata.csv`).
 
 ---
 

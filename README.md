@@ -118,11 +118,17 @@ torchrun --nproc_per_node=2 scripts/train_classifier.py \
 
 ### 3. Evaluating on the Clean & Noisy Robustness Benchmark
 ```bash
-python scripts/eval_benchmark.py \
-    --checkpoint checkpoints/vit_tiny/best_classifier.pth \
+# Standalone clean held-out evaluation (auto-detects pooling heads)
+python scripts/eval_clean_checkpoint.py \
     --data-path data/fsd50k \
-    --arch tiny \
-    --batch-size 16
+    --checkpoint checkpoints/vit-tiny.pth
+
+# Multi-condition noise evaluation across 6 ablation checkpoints
+python scripts/eval_augmentation_comparison.py \
+    --data-path data/fsd50k \
+    --checkpoint-dir checkpoints \
+    --metadata-path metadata/fsd50k_evaluation_metadata.csv \
+    --output-dir metadata
 ```
 
 ### 4. Running Inference / Audio Demo

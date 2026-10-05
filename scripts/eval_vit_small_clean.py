@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Evaluate a specific checkpoint on FSD50K Clean Evaluation Split (10,231 clips)
+Evaluate ViT-Small checkpoint on FSD50K Clean Evaluation Split (10,231 clips)
 """
 
 import os
 import sys
 import csv
-import argparse
 from pathlib import Path
 
 os.environ["OMP_NUM_THREADS"] = "8"
@@ -81,6 +80,7 @@ class EvalAudioDataset(Dataset):
         if sr != self.sample_rate:
             waveform = AF.resample(waveform, orig_freq=sr, new_freq=self.sample_rate)
 
+        # Center pad or crop
         length = waveform.shape[-1]
         if length > self.target_len:
             start = (length - self.target_len) // 2
@@ -166,16 +166,10 @@ def compute_metrics(probs: np.ndarray, targets: np.ndarray, threshold: float = 0
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", type=str, default="checkpoints/vit-tiny.pth")
-    parser.add_argument("--encoder", type=str, default="ast", choices=["ast", "resnet18", "resnet34", "efficientnet_b0", "efficientnet_b4"])
-    parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"])
-    parser.add_argument("--pooling", type=str, default="auto", choices=["auto", "cls_dist", "gap", "gap_max", "attention"])
-    args = parser.parse_args()
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
+    # Load taxonomy
     vocab_file = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.ground_truth" / "vocabulary.csv"
     class_to_idx = {}
     with open(vocab_file, "r", encoding="utf-8") as f:
@@ -184,35 +178,17 @@ def main():
             if row:
                 class_to_idx[str(row[1]).strip()] = int(row[0])
 
-    ckpt_path = Path(args.checkpoint)
-    print(f"Loading {args.encoder if args.encoder != 'ast' else args.arch} from {ckpt_path.name}...")
-
+    # Load model
+    ckpt_path = PROJECT_ROOT / "checkpoints" / "vit-small.zip"
+    print(f"Loading ViT-Small from {ckpt_path.name}...")
+    model = Classifer(tok_dim=384, num_head=6, num_layer=12, num_classes=200, pretrained_dino=False).to(device)
     ckpt = torch.load(ckpt_path, map_location=device)
     sd = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
     sd = {k.replace("module.", ""): v for k, v in sd.items()}
-    if any(k.startswith("features.") for k in sd.keys()):
-        sd = {("encoder." + k if k.startswith("features.") else k): v for k, v in sd.items()}
-
-    pooling = args.pooling
-    if pooling == "auto":
-        if any(k.startswith("pool.") for k in sd.keys()):
-            pooling = "attention"
-        elif "head_norm.weight" in sd and sd["head_norm.weight"].shape[0] == 384 and args.arch == "tiny":
-            pooling = "gap_max"
-        else:
-            pooling = "cls_dist"
-    print(f"Resolved pooling mode: {pooling}")
-
-    if args.encoder == "ast":
-        tok_dim = 192 if args.arch == "tiny" else (384 if args.arch == "small" else 768)
-        num_head = 3 if args.arch == "tiny" else (6 if args.arch == "small" else 12)
-        model = Classifer(encoder_type="ast", tok_dim=tok_dim, num_head=num_head, num_layer=12, num_classes=200, pooling=pooling, pretrained_dino=False).to(device)
-    else:
-        model = Classifer(encoder_type=args.encoder, num_classes=200, pretrained_dino=False).to(device)
-
     model.load_state_dict(sd, strict=True)
     model.eval()
 
+    # Load clean eval split
     eval_csv = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.ground_truth" / "eval.csv"
     clean_eval_dir = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.eval_audio_16k"
     clean_df = pd.read_csv(eval_csv)
@@ -225,7 +201,7 @@ def main():
             clean_paths.append(str(fpath))
             clean_labels.append(str(row["labels"]))
 
-    print(f"Evaluating {len(clean_paths)} clean test clips for {ckpt_path.name}...")
+    print(f"Evaluating {len(clean_paths)} clean test clips...")
     clean_ds = EvalAudioDataset(clean_paths, clean_labels, class_to_idx)
     clean_loader = DataLoader(clean_ds, batch_size=32, shuffle=False, num_workers=4, pin_memory=True)
 
@@ -233,7 +209,7 @@ def main():
     all_targets = []
 
     with torch.no_grad():
-        for specs, tgts in tqdm(clean_loader, desc=f"Eval {ckpt_path.name}"):
+        for specs, tgts in tqdm(clean_loader, desc="Evaluating ViT-Small Clean"):
             specs = specs.to(device, non_blocking=True)
             all_targets.append(tgts.numpy())
             logits = model(specs)
@@ -246,7 +222,7 @@ def main():
     mets_50 = compute_metrics(probs, targets, threshold=0.50)
 
     print("\n" + "=" * 80)
-    print(f"Clean Evaluation Results for {ckpt_path.name} (10,231 clips):")
+    print("ViT-Small Clean Evaluation Results (10,231 clips):")
     print("=" * 80)
     print(f"mAP:                  {mets_20['mAP']:.4f}")
     print(f"mAUC:                 {mets_20['mAUC']:.4f}")
