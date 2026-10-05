@@ -307,7 +307,65 @@ SNR -5 dB & 0.2040 & \textbf{0.3037} & $+48.9\%$ & 45.45\% \\
 
 As detailed in Table~\ref{tab:dsp_noise_gain}, physics-informed DSP augmentation provides massive, monotonically increasing relative improvements as acoustic severity worsens, lifting $-5\text{ dB}$ mAP from $0.2040$ to $0.3037$ ($+48.9\%$ relative gain). Notably, the robust ViT-Tiny ($0.3037$ mAP) decisively surpasses every undefended model in Table~\ref{tab:arch_noise_degradation}, including EfficientNet-B4 ($0.2613$) and ResNet-34 ($0.2251$). 
 
-\noindent\textbf{Critical Scope and Limitation:} We explicitly emphasize that DSP noise defense was trained and evaluated on the ViT-Tiny anchor architecture under our compute budget. Because CNNs were not retrained with the identical DSP noise pipeline, this gain must be attributed to the data augmentation strategy rather than an architectural superiority over CNNs; we cannot conclusively state whether CNNs would derive equivalent or greater percentage gains without retraining them under the full DSP pipeline.
+\noindent\textbf{Critical Scope and Limitation:} We explicitly emphasize that DSP noise defense was evaluated on the ViT-Tiny anchor architecture under our compute budget. Because CNNs were not retrained with the identical DSP noise pipeline, this gain must be attributed to the data augmentation strategy rather than an architectural superiority over CNNs; we cannot conclusively state whether CNNs would derive equivalent or greater percentage gains without retraining them under the full DSP pipeline.
+
+\subsection{Proposed Final Model: Robust ViT-Tiny (+DSP Synergy)}
+\label{sec:final_model}
+Based on our empirical findings across inductive bias comparisons and noise degradation regimes, our final proposed system employs the Audio Spectrogram Transformer (ViT-Tiny) architecture combined with a targeted acoustic data augmentation pipeline designed for real-world environmental robustness.
+
+\subsubsection{Model Architecture and Specifications}
+The final model comprises:
+\begin{itemize}
+    \item \textbf{Backbone Architecture:} Audio Spectrogram Transformer (ViT-Tiny) configured with non-overlapping $16 \times 16$ patch projection, embedding dimension $D = 192$, 3 self-attention heads, and 12 Transformer encoder blocks ($5.58\text{M}$ parameters, $2.98\text{ GMACs}$, $6.4\text{ ms}$ inference latency).
+    \item \textbf{Token Pooling Mechanism:} Dual-token distillation pooling ($\text{CLS} + \text{DIST}$) projecting linearly to 200 multi-label sound event classes.
+    \item \textbf{Acoustic Front-End:} 128-band log-mel filterbanks extracted from $16\text{ kHz}$ mono audio waveforms ($25\text{ ms}$ Hamming window, $10\text{ ms}$ hop length, 1,000 temporal frames), normalized by dataset statistics ($\mu = -4.27, \sigma = 4.57$).
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+% \includegraphics[width=0.9\textwidth]{figures/final_model_architecture.png}
+\fbox{\parbox{0.9\textwidth}{\centering \vspace{2.5cm} \textbf{[Figure: Final Proposed Model Architecture Diagram]} \\ \textit{(Insert architectural diagram here)} \vspace{2.5cm}}}
+\caption{End-to-end architecture of the proposed Robust ViT-Tiny: 128-band log-mel spectrogram extraction, 2D patch tokenization, 12-layer Transformer encoder with CLS and DIST tokens, and dual-token classification head.}
+\label{fig:final_model_architecture}
+\end{figure}
+
+\subsubsection{Data Augmentation and Training Recipe}
+The final system is trained using a streamlined, high-synergy data augmentation pipeline:
+\begin{itemize}
+    \item \textbf{Pairwise Mixup Only:} Audio waveform mixing with mixing coefficient $\lambda \sim \text{Beta}(0.2, 0.2)$ applied without time or frequency masking, preventing over-regularization while maintaining linear acoustic superposition.
+    \item \textbf{Continuous Colored Noise Injection:} Synthetic power-law spectral noise with spectral slope $\alpha \sim \mathcal{U}(-2, 2)$ sampled uniformly across white, pink, brown, blue, and purple acoustic profiles ($p = 0.5$, calibrated target $\text{SNR} \sim \mathcal{U}(0, 20)\text{ dB}$).
+    \item \textbf{Schroeder Room Reverberation:} Statistical impulse response simulation modeling decaying diffuse reflections with reverberation decay time $T_{60} \sim \mathcal{U}(0.15, 0.60)\text{ s}$ ($p = 0.3$).
+    \item \textbf{Optimization Parameters:} 30 epochs using AdamW ($\eta = 5 \times 10^{-5}$, weight decay $10^{-4}$), \texttt{ast\_step} decay schedule (5 epochs warmup/constant initial LR, followed by $0.90\times$ decay per epoch), and multi-label BCEWithLogitsLoss with 0.1 label smoothing.
+\end{itemize}
+
+\subsubsection{Training Dynamics and Empirical Performance}
+\begin{figure}[htbp]
+\centering
+% \includegraphics[width=0.85\textwidth]{figures/final_model_training_curve.png}
+\fbox{\parbox{0.85\textwidth}{\centering \vspace{2.2cm} \textbf{[Figure: Training and Validation Loss / mAP Curves]} \\ \textit{(Insert training loss and validation mAP curves across 30 epochs here)} \vspace{2.2cm}}}
+\caption{Training loss convergence and validation mAP progression across 30 epochs for the final Robust ViT-Tiny model.}
+\label{fig:final_model_training_curve}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Empirical Performance of the Proposed Final Model on Clean Held-Out Split and Across ACE Noise Degradation Tiers (10,231 Clips).}
+\label{tab:final_model_eval}
+\vspace{2mm}
+\resizebox{0.95\textwidth}{!}{
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Condition} & \textbf{Eval mAP} & \textbf{Eval mAUC} & \textbf{Micro-F1 ($\tau=0.20$)} & \textbf{Macro-F1 ($\tau=0.20$)} & \textbf{Top-1 Hit} & \textbf{Top-5 Hit} \\
+\midrule
+Clean Split         & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] \\
+SNR +10 dB          & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] \\
+SNR +5 dB           & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] \\
+SNR 0 dB            & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] \\
+SNR -5 dB           & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] & [Pending] \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
 \subsection{Setup 3: Systematic Ablation Studies}
 Due to compute budget constraints and the sequential project timeline where CNN baseline runs completed later during development, all fine-grained systematic ablation studies (data augmentations, threshold calibrations, and pooling mechanisms) were conducted using the ViT-Tiny backbone as the unified anchor architecture.
