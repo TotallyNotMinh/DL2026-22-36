@@ -30,21 +30,24 @@ This project investigates and resolves this robustness gap on the **FSD50K** (20
 │   ├── augment.py              # SpecAugment, Mixup, ColoredNoise, Reverb
 │   └── sampler.py              # DistributedWeightedSampler for class balancing
 ├── models/                     # Deep learning model architectures
-│   ├── classifier.py           # Multi-label classifier head with pooling ablations
+│   ├── classifier.py           # Unified classifier head (Dual-Token, GAP, GAP+Max, Attention)
 │   ├── encoder.py              # ASTEncoder (DeiT ViT-Tiny, Small, Base)
 │   ├── resnet_encoder.py       # ResNet-18 and ResNet-34 CNN encoders
+│   ├── efficientnet_encoder.py # EfficientNet-B0 and EfficientNet-B4 CNN encoders
 │   └── denoiser.py             # Self-supervised autoencoder backbone
 ├── metrics/                    # Multi-label evaluation metrics
 │   ├── classification.py       # mAP, mAUC, Micro/Macro F1, Top-1/Top-5 Hit
 │   └── reconstruction.py       # SDR, SNR, MSE evaluation
 ├── scripts/                    # Training, evaluation, and inference CLI utilities
 │   ├── train_classifier.py     # Main end-to-end classifier training script
-│   ├── eval_benchmark.py       # Automated multi-condition SNR benchmark evaluator
-│   ├── inference.py            # Standalone single-file and batch inference engine
-│   └── profile_model.py        # Model complexity (FLOPs, parameters) profiler
-├── report/                     # Project report templates and guidelines
-│   └── PROJECT_REPORT_TEMPLATE.md
-├── DATA.md                     # Comprehensive dataset documentation
+│   ├── eval_clean_checkpoint.py# Standalone FSD50K clean held-out evaluation
+│   ├── eval_benchmark.py       # Multi-condition unseen benchmark evaluator
+│   ├── eval_augmentation_comparison.py # 6-way augmentation ablation evaluator
+│   ├── eval_all_checkpoints.py # Batch benchmark evaluator across SNR tiers
+│   └── inference.py            # Standalone single-file and batch inference engine
+├── metadata/                   # Benchmark CSV results and evaluation manifests
+├── report/                     # LaTeX research paper, figures, and compiled PDF
+├── DATA.md                     # Comprehensive dataset, augmentation & robustness documentation
 └── README.md                   # Project overview and reproduction guide
 ```
 
@@ -54,8 +57,8 @@ This project investigates and resolves this robustness gap on the **FSD50K** (20
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/TotallyNotMinh/Environmental-Sound-Recognition-Under-Unseen-Conditions.git
-cd Environmental-Sound-Recognition-Under-Unseen-Conditions
+git clone https://github.com/TotallyNotMinh/DL2026-22-36.git
+cd DL2026-22-36
 ```
 
 ### 2. Create Virtual Environment
@@ -63,7 +66,7 @@ cd Environmental-Sound-Recognition-Under-Unseen-Conditions
 conda create -n dl_audio python=3.12 -y
 conda activate dl_audio
 
-# Install PyTorch with CUDA support (adjust cuda version as needed)
+# Install PyTorch with CUDA support (adjust CUDA version as needed)
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Install core dependencies
@@ -74,7 +77,7 @@ pip install numpy scipy pandas tqdm soundfile torchinfo
 
 ## 📊 Dataset Setup
 
-Follow [`DATA.md`](DATA.md) for full dataset specifications and links. The dataset directory structure should be arranged as follows:
+Follow [`DATA.md`](DATA.md) for full dataset specifications, data augmentation formulations, and robustness benchmark details. The dataset directory structure should be arranged as follows:
 
 ```text
 data/fsd50k/
@@ -90,76 +93,353 @@ data/fsd50k/
 
 ## 🚀 Steps for Reproducing Main Experiments
 
-### 1. Training the Main ViT-Tiny Classifier (Single GPU)
+> **Note:** All commands assume the conda environment is active and the working directory is the repo root.
+> Checkpoints are saved to `checkpoints/` by default. Adjust `--data-path` to match your local dataset path.
+
+---
+
+### Step 1 — Data Download & Preprocessing
+
+See [`DATA.md`](DATA.md) for full instructions. Quick-start:
+
+```bash
+# Option A: Kaggle CLI (recommended, audio already at 16 kHz)
+pip install kaggle
+kaggle datasets download -d yousirui1/fsd50k -p data/ --unzip
+
+# Option B: Direct from Zenodo
+# See DATA.md §2 for wget commands and manual 16 kHz resampling steps
+```
+
+Expected layout after download:
+```text
+data/fsd50k/
+├── FSD50K.ground_truth/
+│   ├── dev.csv              # 36,796 clips (train + val)
+│   ├── eval.csv             # 10,231 clips (test)
+│   └── vocabulary.csv       # 200 class labels
+├── FSD50K.dev_audio_16k/    # *.wav  (training & validation)
+└── FSD50K.eval_audio_16k/   # *.wav  (evaluation / held-out)
+```
+
+---
+
+### Step 2 — Baseline CNN Architectures (Setup 1)
+
+All CNN baselines use full SpecAugment + Mixup augmentation.
+Convolutional networks use $\eta = 5 \times 10^{-4}$ (10× higher than ViT):
+
+```bash
+# ResNet-18
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder resnet18 \
+    --batch-size 16 \
+    --num-epoch 30 \
+    --encoder-lr 5e-4 \
+    --head-lr 5e-4 \
+    --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05
+
+# ResNet-34
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder resnet34 \
+    --batch-size 16 \
+    --num-epoch 30 \
+    --encoder-lr 5e-4 \
+    --head-lr 5e-4 \
+    --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05
+
+# EfficientNet-B0
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder efficientnet_b0 \
+    --batch-size 16 \
+    --num-epoch 30 \
+    --encoder-lr 5e-4 \
+    --head-lr 5e-4 \
+    --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05
+
+# EfficientNet-B4
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder efficientnet_b4 \
+    --batch-size 16 \
+    --num-epoch 30 \
+    --encoder-lr 5e-4 \
+    --head-lr 5e-4 \
+    --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05
+```
+
+---
+
+### Step 3 — Augmentation Ablation Study (Setup 3a)
+
+All six variants use ViT-Tiny with the dual-token pooling baseline (`--pooling None`) for 30 epochs.
+The only variables are the active augmentation flags:
+
+```bash
+# Condition 1: no_aug — no data augmentation whatsoever
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 0 --time-mask 0 \
+    --mixup-prob 0.0 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Condition 2: time_mask — SpecAugment time masking only (T=192 frames)
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 0 --time-mask 192 \
+    --mixup-prob 0.0 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Condition 3: freq_mask — SpecAugment frequency masking only (F=48 bins)
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 0 \
+    --mixup-prob 0.0 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Condition 4: time_freq_mask — Both SpecAugment masks (T=192, F=48)
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.0 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Condition 5: mixup — Mixup only (α=0.5, p=0.5), no SpecAugment
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 0 --time-mask 0 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Condition 6: full — SpecAugment + Mixup combined (best clean accuracy)
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 --noise-level 0.0 \
+    --time-shift 0 --colored-noise-prob 0.0 --reverb-prob 0.0
+```
+
+---
+
+### Step 4 — Pooling Strategy Ablation (Setup 3b)
+
+All four variants use ViT-Tiny with the full augmentation stack (SpecAugment + Mixup + time-shift + Gaussian noise):
+
+```bash
+# Baseline: Dual-Token (CLS + DIST tokens, default —no --pooling flag or --pooling None)
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# GAP: Global Average Pooling over all 1,188 patch tokens
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --pooling gap \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# GAP+Max: Concatenation of GAP and Global Max Pooling
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --pooling gap_max \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.0 --reverb-prob 0.0
+
+# Attention Pooling: Learned softmax-weighted aggregation over patch tokens
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --pooling attention \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.0 --reverb-prob 0.0
+```
+
+---
+
+### Step 5 — ViT-Small Architecture Scaling (Setup 1 / Setup 3c)
+
 ```bash
 python scripts/train_classifier.py \
-      --data-path data/fsd50k \
-      --arch tiny \
-      --pooling attention \
-      --batch-size 12 \
-      --num-epoch 30 \
-      --patience 30 \
-      --encoder-lr 5e-5 \
-      --head-lr 5e-4 \
-      --weight-decay 1e-4 \
-      --mixup-prob 0.5 \
-      --freq-mask 0 \
-      --time-mask 0 \
-      --colored-noise-prob 0.5 \
-      --reverb-prob 0.3 
+    --data-path data/fsd50k \
+    --encoder ast --arch small \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 48 --time-mask 192 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05
 ```
 
-### 2. Training with Multi-GPU DDP (e.g. Dual-GPU Kaggle T4 x2)
+---
+
+### Step 6 — Proposed Robust Model (Setup 2)
+
+ViT-Tiny + Attention Pooling + Mixup + Colored Noise ($1/f^\alpha$) + Schroeder Reverberation.
+SpecAugment is disabled to prevent conflicting with learned noise invariance:
+
+```bash
+python scripts/train_classifier.py \
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --pooling attention \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 0 --time-mask 0 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.5 \
+    --colored-noise-min-snr -5.0 \
+    --colored-noise-max-snr 20.0 \
+    --reverb-prob 0.3 \
+    --reverb-min-t60 0.15 \
+    --reverb-max-t60 0.60
+```
+
+---
+
+### Step 7 — Multi-GPU DDP Training (e.g. Dual-GPU Kaggle / Server)
+
 ```bash
 torchrun --nproc_per_node=2 scripts/train_classifier.py \
-      --data-path data/fsd50k \
-      --arch tiny \
-      --pooling attention \
-      --batch-size 12 \
-      --num-epoch 30 \
-      --patience 30 \
-      --encoder-lr 5e-5 \
-      --head-lr 5e-4 \
-      --weight-decay 1e-4 \
-      --mixup-prob 0.5 \
-      --freq-mask 0 \
-      --time-mask 0 \
-      --colored-noise-prob 0.5 \
-      --reverb-prob 0.3 
+    --data-path data/fsd50k \
+    --encoder ast --arch tiny \
+    --pooling attention \
+    --batch-size 12 --num-epoch 30 --patience 30 \
+    --encoder-lr 5e-5 --head-lr 5e-5 --weight-decay 1e-4 \
+    --lr-scheduler ast_step \
+    --freq-mask 0 --time-mask 0 \
+    --mixup-prob 0.5 --mixup-alpha 0.5 \
+    --time-shift 10 --noise-level 0.05 \
+    --colored-noise-prob 0.5 \
+    --colored-noise-min-snr -5.0 \
+    --colored-noise-max-snr 20.0 \
+    --reverb-prob 0.3 \
+    --reverb-min-t60 0.15 \
+    --reverb-max-t60 0.60
 ```
 
-### 3. Evaluating on the Clean & Noisy Robustness Benchmark
+---
+
+### Step 8 — Evaluation on Clean & Adverse Noise Benchmarks
+
 ```bash
-# Standalone clean held-out evaluation (auto-detects pooling heads)
+# Standalone evaluation on clean held-out test split (10,231 clips)
+# Auto-detects architecture and pooling head from checkpoint state dict
 python scripts/eval_clean_checkpoint.py \
     --data-path data/fsd50k \
-    --checkpoint checkpoints/vit-tiny.pth
+    --checkpoint checkpoints/vit-tiny-mixup-colored-noises.pth \
+    --encoder ast \
+    --arch tiny \
+    --pooling auto
 
-# Multi-condition noise evaluation across 6 ablation checkpoints
+# Multi-condition noise evaluation across all 6 augmentation ablation checkpoints
+# Requires: metadata/fsd50k_evaluation_metadata.csv (40,925-row ACE noise manifest, seed=42)
+# ACE noise source: data/ace/Single/  (see DATA.md §5 for ACE dataset setup)
 python scripts/eval_augmentation_comparison.py \
     --data-path data/fsd50k \
     --checkpoint-dir checkpoints \
     --metadata-path metadata/fsd50k_evaluation_metadata.csv \
     --output-dir metadata
-```
 
-### 4. Running Inference / Audio Demo
-```bash
-# Run prediction on a single audio file
-python scripts/inference.py \
-    --audio sample.wav \
-    --checkpoint checkpoints/vit_tiny/best_classifier.pth \
-    --arch tiny \
-    --top-k 5
-
-# Run batch prediction on a directory
-python scripts/inference.py \
-    --audio-dir path/to/wavs/ \
-    --checkpoint checkpoints/vit_tiny/best_classifier.pth \
-    --output predictions.csv
+# Comprehensive evaluation across all architectures and SNR tiers (+10, +5, 0, -5 dB)
+python scripts/eval_all_checkpoints.py \
+    --data-path data/fsd50k \
+    --checkpoint-dir checkpoints \
+    --metadata-path metadata/fsd50k_evaluation_metadata.csv \
+    --output-csv metadata/new_checkpoints_noise_robustness.csv
 ```
 
 ---
+
+### Step 9 — Running Inference / Audio Demo
+
+```bash
+# Single-file prediction (top-5 classes above threshold)
+python scripts/inference.py \
+    --audio sample.wav \
+    --checkpoint checkpoints/best_classifier.pth \
+    --arch tiny \
+    --top-k 5 \
+    --threshold 0.20
+
+# Batch prediction over an audio directory, output to JSON
+python scripts/inference.py \
+    --audio-dir path/to/wavs/ \
+    --checkpoint checkpoints/best_classifier.pth \
+    --arch tiny \
+    --output predictions.json
+```
+
+
+
 
 ## 👥 Team & Member Contributions
 

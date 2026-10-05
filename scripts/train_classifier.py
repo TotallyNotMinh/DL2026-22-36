@@ -56,7 +56,7 @@ parser.add_argument("--colored-noise-max-snr", type=float, default=20.0, help="M
 parser.add_argument("--reverb-prob", type=float, default=0.3, help="Probability of applying synthetic room reverberation")
 parser.add_argument("--reverb-min-t60", type=float, default=0.15, help="Minimum decay time T60 in seconds for reverberation")
 parser.add_argument("--reverb-max-t60", type=float, default=0.6, help="Maximum decay time T60 in seconds for reverberation")
-parser.add_argument("--encoder", type=str, default="ast", choices=["ast", "resnet18", "resnet34", "efficientnet_b0"], help="Backbone encoder architecture: ast (default), resnet18, resnet34, efficientnet_b0")
+parser.add_argument("--encoder", type=str, default="ast", choices=["ast", "resnet18", "resnet34", "efficientnet_b0", "efficientnet_b4"], help="Backbone encoder architecture: ast (default), resnet18, resnet34, efficientnet_b0, efficientnet_b4")
 parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"], help="ViT backbone architecture (default: tiny)")
 parser.add_argument("--no-dino", action="store_true", help="Disable pretrained ViT backbone initialization")
 parser.add_argument("--no-cls-dist", action="store_true", help="Disable CLS+DIST dual token pooling (fall back to mean pooling)")

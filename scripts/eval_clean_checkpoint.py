@@ -167,7 +167,8 @@ def compute_metrics(probs: np.ndarray, targets: np.ndarray, threshold: float = 0
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", type=str, default="checkpoints/vit-tiny.pth")
+    parser.add_argument("--checkpoint", type=str, default="checkpoints/vit-tiny.pth", help="Path to checkpoint (.pth)")
+    parser.add_argument("--data-path", type=str, default="data/fsd50k", help="Path to FSD50K dataset root directory")
     parser.add_argument("--encoder", type=str, default="ast", choices=["ast", "resnet18", "resnet34", "efficientnet_b0", "efficientnet_b4"])
     parser.add_argument("--arch", type=str, default="tiny", choices=["tiny", "small", "base"])
     parser.add_argument("--pooling", type=str, default="auto", choices=["auto", "cls_dist", "gap", "gap_max", "attention"])
@@ -176,7 +177,14 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    vocab_file = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.ground_truth" / "vocabulary.csv"
+    data_root = Path(args.data_path)
+    if not data_root.is_absolute():
+        data_root = PROJECT_ROOT / data_root
+
+    vocab_file = data_root / "FSD50K.ground_truth" / "vocabulary.csv"
+    if not vocab_file.is_file():
+        vocab_file = data_root / "vocabulary.csv"
+
     class_to_idx = {}
     with open(vocab_file, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -185,6 +193,8 @@ def main():
                 class_to_idx[str(row[1]).strip()] = int(row[0])
 
     ckpt_path = Path(args.checkpoint)
+    if not ckpt_path.is_absolute():
+        ckpt_path = PROJECT_ROOT / ckpt_path
     print(f"Loading {args.encoder if args.encoder != 'ast' else args.arch} from {ckpt_path.name}...")
 
     ckpt = torch.load(ckpt_path, map_location=device)
@@ -213,8 +223,8 @@ def main():
     model.load_state_dict(sd, strict=True)
     model.eval()
 
-    eval_csv = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.ground_truth" / "eval.csv"
-    clean_eval_dir = PROJECT_ROOT / "data" / "fsd50k" / "FSD50K.eval_audio_16k"
+    eval_csv = data_root / "FSD50K.ground_truth" / "eval.csv"
+    clean_eval_dir = data_root / "FSD50K.eval_audio_16k"
     clean_df = pd.read_csv(eval_csv)
     
     clean_paths = []
