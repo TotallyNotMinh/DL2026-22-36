@@ -156,6 +156,19 @@ We explore four distinct patch aggregation strategies over the output tokens $\m
     \end{equation}
 \end{itemize}
 
+\subsection{Data Augmentation Techniques}
+\label{sec:data_augmentations}
+To enhance model generalization, prevent overfitting to clean recording environments, and simulate adverse acoustic scenarios, we evaluate six distinct data augmentation methods:
+
+\begin{enumerate}
+    \item \textbf{Time Masking:} Zeroes out contiguous temporal frames across all frequency bands ($\Delta t \sim \mathcal{U}(0, T_{\text{mask}})$, up to $T_{\text{mask}} = 192$ frames / $1.92\text{ s}$). This forces the model to identify acoustic events from partial temporal segments rather than relying on transient onset bursts.
+    \item \textbf{Frequency Masking:} Zeroes out contiguous frequency channels across all time steps ($\Delta f \sim \mathcal{U}(0, F_{\text{mask}})$, up to $F_{\text{mask}} = 48$ mel bins). This prevents the self-attention network from overfitting to specific narrow harmonic bands or microphone frequency response peaks.
+    \item \textbf{SpecAugment:} The joint application of both Time Masking and Frequency Masking directly on the log-mel spectrogram. It creates structured missing time-frequency patches that regularize high-capacity 2D representations.
+    \item \textbf{Mixup:} Convex linear interpolation of pairs of raw audio waveforms and their corresponding multi-label target vectors: $\tilde{x} = \lambda x_a + (1 - \lambda) x_b$ and $\tilde{y} = \lambda y_a + (1 - \lambda) y_b$, where $\lambda \sim \text{Beta}(\alpha_{\text{mix}}, \alpha_{\text{mix}})$ with $\alpha_{\text{mix}} = 0.2$. In audio, Mixup physically simulates the acoustic superposition of concurrent sound sources (acoustic polyphony), enforcing linear behavior in intermediate feature representations.
+    \item \textbf{Continuous Colored Noise Injection:} Algorithmic on-the-fly synthesis of power-law colored noise $S(f) \propto 1/f^\alpha$ with spectral slope $\alpha \sim \mathcal{U}(-2, 2)$, spanning white ($\alpha=0$), pink ($\alpha=1$), brown/Brownian ($\alpha=2$), blue ($\alpha=-1$), and purple ($\alpha=-2$) noise. Unlike static white noise, this dynamically matches diverse real-world environmental ambient noise spectra.
+    \item \textbf{Schroeder Room Reverberation:} Statistical acoustic impulse response convolution modeling enclosed space reflections and decaying reverberant tails, parameterized by decay time $T_{60} \sim \mathcal{U}(0.15, 0.60)\text{ s}$. This trains the network to disentangle direct sound from diffuse multipath room reflections.
+\end{enumerate}
+
 \subsection{Proposed DSP-Augmented Robust Training Framework}
 \label{sec:dsp_augmentations}
 Real-world acoustic environments present severe out-of-distribution background noise and room reverberation that cause standard models to collapse. Rather than relying on external, static noise datasets that introduce dataset bias and memory overhead, we propose a purely algorithmic Digital Signal Processing (DSP) augmentation framework that synthesizes realistic acoustic corruptions directly in the frequency and time domains.
