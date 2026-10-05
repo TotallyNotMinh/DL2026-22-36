@@ -330,7 +330,7 @@ Based on our empirical findings across inductive bias comparisons and noise degr
 The final model comprises:
 \begin{itemize}
     \item \textbf{Backbone Architecture:} Audio Spectrogram Transformer (ViT-Tiny) configured with non-overlapping $16 \times 16$ patch projection, embedding dimension $D = 192$, 3 self-attention heads, and 12 Transformer encoder blocks ($5.58\text{M}$ parameters, $2.98\text{ GMACs}$, $6.4\text{ ms}$ inference latency).
-    \item \textbf{Token Pooling Mechanism:} Dual-token distillation pooling ($\text{CLS} + \text{DIST}$) projecting linearly to 200 multi-label sound event classes.
+    \item \textbf{Token Pooling Mechanism:} Learned Attention Pooling ($\mathbf{w}_a \in \mathbb{R}^{192}$) with softmax token weighting over all output patch representations, dynamically focusing on salient event bursts and projecting linearly to 200 sound classes.
     \item \textbf{Acoustic Front-End:} 128-band log-mel filterbanks extracted from $16\text{ kHz}$ mono audio waveforms ($25\text{ ms}$ Hamming window, $10\text{ ms}$ hop length, 1,000 temporal frames), normalized by dataset statistics ($\mu = -4.27, \sigma = 4.57$).
 \end{itemize}
 
@@ -338,25 +338,24 @@ The final model comprises:
 \centering
 % \includegraphics[width=0.9\textwidth]{figures/final_model_architecture.png}
 \fbox{\parbox{0.9\textwidth}{\centering \vspace{2.5cm} \textbf{[Figure: Final Proposed Model Architecture Diagram]} \\ \textit{(Insert architectural diagram here)} \vspace{2.5cm}}}
-\caption{End-to-end architecture of the proposed Robust ViT-Tiny: 128-band log-mel spectrogram extraction, 2D patch tokenization, 12-layer Transformer encoder with CLS and DIST tokens, and dual-token classification head.}
+\caption{End-to-end architecture of the proposed Robust ViT-Tiny: 128-band log-mel spectrogram extraction, 2D patch tokenization, 12-layer Transformer encoder with CLS and DIST tokens, and learned attention pooling head.}
 \label{fig:final_model_architecture}
 \end{figure}
 
 \subsubsection{Data Augmentation and Training Recipe}
 The final system is trained using a streamlined, high-synergy data augmentation pipeline:
 \begin{itemize}
-    \item \textbf{Pairwise Mixup Only:} Audio waveform mixing with mixing coefficient $\lambda \sim \text{Beta}(0.2, 0.2)$ applied without time or frequency masking, preventing over-regularization while maintaining linear acoustic superposition.
-    \item \textbf{Continuous Colored Noise Injection:} Synthetic power-law spectral noise with spectral slope $\alpha \sim \mathcal{U}(-2, 2)$ sampled uniformly across white, pink, brown, blue, and purple acoustic profiles ($p = 0.5$, calibrated target $\text{SNR} \sim \mathcal{U}(0, 20)\text{ dB}$).
+    \item \textbf{Pairwise Mixup Only:} Audio waveform mixing with mixing coefficient $\lambda \sim \text{Beta}(0.5, 0.5)$ at $p=0.5$ applied without time or frequency masking, preventing over-regularization while maintaining linear acoustic superposition.
+    \item \textbf{Continuous Colored Noise Injection:} Synthetic power-law spectral noise with spectral slope $\alpha \sim \mathcal{U}(-2, 2)$ sampled uniformly across white, pink, brown, blue, and purple acoustic profiles ($p = 0.5$, calibrated target $\text{SNR} \sim \mathcal{U}(-5.0, 20.0)\text{ dB}$).
     \item \textbf{Schroeder Room Reverberation:} Statistical impulse response simulation modeling decaying diffuse reflections with reverberation decay time $T_{60} \sim \mathcal{U}(0.15, 0.60)\text{ s}$ ($p = 0.3$).
-    \item \textbf{Optimization Parameters:} 30 epochs using AdamW ($\eta = 5 \times 10^{-5}$, weight decay $10^{-4}$), \texttt{ast\_step} decay schedule (5 epochs warmup/constant initial LR, followed by $0.90\times$ decay per epoch), and multi-label BCEWithLogitsLoss with 0.1 label smoothing.
+    \item \textbf{Optimization Parameters:} 30 epochs using AdamW ($\eta = 5 \times 10^{-5}$, weight decay $10^{-4}$), effective batch size 24 with class-balanced sampling (\texttt{DistributedWeightedSampler}), \texttt{ast\_step} decay schedule (5 epochs constant initial LR, followed by $0.90\times$ decay per epoch), and multi-label BCEWithLogitsLoss with 0.1 label smoothing.
 \end{itemize}
 
 \subsubsection{Training Dynamics and Empirical Performance}
 \begin{figure}[htbp]
 \centering
-% \includegraphics[width=0.85\textwidth]{figures/final_model_training_curve.png}
-\fbox{\parbox{0.85\textwidth}{\centering \vspace{2.2cm} \textbf{[Figure: Training and Validation Loss / mAP Curves]} \\ \textit{(Insert training loss and validation mAP curves across 30 epochs here)} \vspace{2.2cm}}}
-\caption{Training loss convergence and validation mAP progression across 30 epochs for the final Robust ViT-Tiny model.}
+\includegraphics[width=\textwidth]{figures/final_model_training_curve.pdf}
+\caption{Training loss convergence and validation mAP / mAUC progression across 30 epochs for the final Robust ViT-Tiny model (best validation mAP: $0.5630$ at epoch 30).}
 \label{fig:final_model_training_curve}
 \end{figure}
 
