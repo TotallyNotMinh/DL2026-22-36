@@ -93,27 +93,39 @@ data/fsd50k/
 ### 1. Training the Main ViT-Tiny Classifier (Single GPU)
 ```bash
 python scripts/train_classifier.py \
-    --data-path data/fsd50k \
-    --arch tiny \
-    --batch-size 12 \
-    --num-epoch 30 \
-    --colored-noise-prob 0.5 \
-    --reverb-prob 0.3 \
-    --checkpoint-dir checkpoints/vit_tiny/
+      --data-path data/fsd50k \
+      --arch tiny \
+      --pooling attention \
+      --batch-size 12 \
+      --num-epoch 30 \
+      --patience 30 \
+      --encoder-lr 5e-5 \
+      --head-lr 5e-4 \
+      --weight-decay 1e-4 \
+      --mixup-prob 0.5 \
+      --freq-mask 0 \
+      --time-mask 0 \
+      --colored-noise-prob 0.5 \
+      --reverb-prob 0.3 
 ```
 
 ### 2. Training with Multi-GPU DDP (e.g. Dual-GPU Kaggle T4 x2)
 ```bash
 torchrun --nproc_per_node=2 scripts/train_classifier.py \
-    --data-path /kaggle/input/datasets/yousirui1/fsd50k/fsd50k \
-    --arch tiny \
-    --batch-size 12 \
-    --num-workers 2 \
-    --num-epoch 30 \
-    --patience 30 \
-    --colored-noise-prob 0.5 \
-    --reverb-prob 0.3 \
-    --checkpoint-dir /kaggle/working/checkpoints/vit_tiny_ddp/
+      --data-path data/fsd50k \
+      --arch tiny \
+      --pooling attention \
+      --batch-size 12 \
+      --num-epoch 30 \
+      --patience 30 \
+      --encoder-lr 5e-5 \
+      --head-lr 5e-4 \
+      --weight-decay 1e-4 \
+      --mixup-prob 0.5 \
+      --freq-mask 0 \
+      --time-mask 0 \
+      --colored-noise-prob 0.5 \
+      --reverb-prob 0.3 
 ```
 
 ### 3. Evaluating on the Clean & Noisy Robustness Benchmark
