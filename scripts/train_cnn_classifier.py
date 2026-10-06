@@ -55,6 +55,8 @@ parser.add_argument("--arch", type=str, default="b0", choices=list(ARCH_CONFIGS.
 parser.add_argument("--no-pretrained", action="store_true", help="Disable ImageNet-pretrained backbone initialization")
 parser.add_argument("--lr-patience", type=int, default=2, help="Epochs with no val mAP improvement before LR is halved (CMKD default: 2)")
 parser.add_argument("--lr-factor", type=float, default=0.5, help="LR reduction factor on plateau (CMKD default: 0.5)")
+parser.add_argument("--optimizer", type=str, default="adam", choices=["adam", "adamw"], help="adam = CMKD/PSLA recipe (default); adamw = same optimizer as the AST/ViT script, for like-for-like comparison")
+parser.add_argument("--lr-scheduler", type=str, default="plateau", choices=["plateau", "ast_step"], help="plateau = ReduceLROnPlateau on val mAP (CMKD, default); ast_step = constant for 5 epochs then x0.90 per epoch (same as scripts/train_classifier.py)")
 
 args = parser.parse_args()
 
@@ -256,15 +258,24 @@ def train():
     # ============== Optimizer & Scheduler ==============
     # CMKD's CNN recipe uses a single Adam param group (unlike AST's split
     # encoder/head LR) and a validation-plateau schedule, not a fixed step decay.
-    optimizer = torch.optim.Adam(
+    optimizer_cls = torch.optim.AdamW if args.optimizer == "adamw" else torch.optim.Adam
+    optimizer = optimizer_cls(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay, betas=(args.adam_beta1, 0.999)
     )
 
     # mode="max" because mAP is "higher is better" -- the default mode="min"
     # would halve the LR exactly when it shouldn't.
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", factor=args.lr_factor, patience=args.lr_patience
-    )
+    if args.lr_scheduler == "ast_step":
+        # Same schedule as scripts/train_classifier.py: base LR for 5 epochs, then x0.90 per epoch.
+        # Stepped once per epoch, independent of val mAP.
+        def ast_lr_lambda(ep):
+            return 1.0 if ep < 5 else 0.90 ** (ep - 4)
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=ast_lr_lambda)
+    else:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="max", factor=args.lr_factor, patience=args.lr_patience
+        )
 
     scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
@@ -287,6 +298,7 @@ def train():
         print(f"  • Total samples:          {len(train_dataset)} train, {len(val_dataset)} val")
         print(f"  • Effective batch size:   {BATCH_SIZE * world_size * args.grad_accum_steps}")
         print(f"  • Architecture:           {arch_cfg['name']}")
+        print(f"  • Optimizer / schedule:   {args.optimizer} (lr {args.lr}, wd {args.weight_decay}, beta1 {args.adam_beta1}) / {args.lr_scheduler}, warmup {args.warmup_steps} steps")
         print(f"  • Pretrained Backbone:    {'ImageNet (torchvision)' if not args.no_pretrained else 'Random init'}")
         sampler_desc = (
             "Class-Balanced (DistributedWeightedSampler)"
@@ -414,7 +426,9 @@ def train():
             broadcast_value = val_map_tensor.item()
             val_map_for_scheduler = None if broadcast_value < 0 else broadcast_value
 
-        if val_map_for_scheduler is not None:
+        if args.lr_scheduler == "ast_step":
+            scheduler.step()
+        elif val_map_for_scheduler is not None:
             scheduler.step(val_map_for_scheduler)
 
         # ============== Rank-0 bookkeeping: print + checkpoint ==============
