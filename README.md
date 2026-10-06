@@ -91,6 +91,19 @@ data/fsd50k/
 
 ---
 
+## 💾 Pre-trained Weights & Model Checkpoints
+
+All trained model weights, evaluation checkpoints (ResNet, EfficientNet, ViT-Tiny, ViT-Small, Denoising Encoders), and experiment archives (containing `.pth` and `.zip` files) are hosted on Google Drive:
+- 🔗 **Google Drive Checkpoints Folder:** [Download Pre-trained Model Weights & Checkpoints](https://drive.google.com/drive/folders/1ZCv6w_MN8kF1f3m0npEY96q4KrkWGROi?usp=sharing)
+
+To evaluate or run inference with these checkpoints, download and extract them into the `checkpoints/` directory:
+```bash
+mkdir -p checkpoints
+# Place or unzip downloaded checkpoint files (.pth) into checkpoints/
+```
+
+---
+
 ## 🚀 Steps for Reproducing Main Experiments
 
 > **Note:** All commands assume the conda environment is active and the working directory is the repo root.
@@ -100,15 +113,12 @@ data/fsd50k/
 
 ### Step 1 — Data Download & Preprocessing
 
-See [`DATA.md`](DATA.md) for full instructions. Quick-start:
+FSD50K is downloaded directly via the Kaggle CLI (pre-resampled to 16 kHz):
 
 ```bash
-# Option A: Kaggle CLI (recommended, audio already at 16 kHz)
 pip install kaggle
+# Ensure your ~/.kaggle/kaggle.json API token is configured
 kaggle datasets download -d yousirui1/fsd50k -p data/ --unzip
-
-# Option B: Direct from Zenodo
-# See DATA.md §2 for wget commands and manual 16 kHz resampling steps
 ```
 
 Expected layout after download:
@@ -410,12 +420,16 @@ python scripts/eval_augmentation_comparison.py \
     --output-dir metadata
 
 # Comprehensive evaluation across all architectures and SNR tiers (+10, +5, 0, -5 dB)
+# Pre-synthesized multi-SNR evaluation dataset: https://www.kaggle.com/datasets/knuckleizmad/fsd50k-eval-various-snrs
 python scripts/eval_all_checkpoints.py \
     --data-path data/fsd50k \
     --checkpoint-dir checkpoints \
     --metadata-path metadata/fsd50k_evaluation_metadata.csv \
     --output-csv metadata/new_checkpoints_noise_robustness.csv
 ```
+
+> **Evaluation Dataset:** The pre-rendered multi-condition noisy evaluation benchmark across varying SNRs can also be downloaded directly from Kaggle:
+> - 🔗 **Kaggle Dataset:** [FSD50K Evaluation under Various SNRs](https://www.kaggle.com/datasets/knuckleizmad/fsd50k-eval-various-snrs)
 
 ---
 
@@ -443,12 +457,12 @@ python scripts/inference.py \
 
 ## 👥 Team & Member Contributions
 
-| Member | Role | Core Deliverable |
-| :--- | :--- | :--- |
-| **Dao Chi Trung** | CNN Baselines | EfficientNet-B0 and B4 baselines, model complexity profiling |
-| **Pham Hong Van** | CNN Baselines | ResNet-18 and ResNet-34 baselines, model profiling and evaluation |
-| **Vu Thi Kim Oanh** | Augmentation Ablations | SpecAugment vs. Mixup 6-way ablation study |
-| **Nguyen Thi Ngoc Anh** | Classification Layer Ablation | Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens |
-| **Pham Gia Anh** | Model Scaling Comparison | ViT-Tiny vs. ViT-Small architecture comparison and FLOP/latency profiling |
-| **Nguyen Khai Minh** | Dataset Engineering & Documentation | ACE noise benchmark synthesis, FSD50K EDA, `DATA.md` |
-| **Dang Nhat Minh** | Robustness Pipeline | Algorithmic DSP colored noise & reverb augmentations, benchmark evaluation pipeline |
+| Member Name | Student ID | Role | Core Deliverable |
+| :--- | :--- | :--- | :--- |
+| **Dao Chi Trung** | 23BA14295 | CNN Baselines | EfficientNet-B0 and B4 baselines, model complexity profiling |
+| **Pham Hong Van** | 23BA14318 | CNN Baselines | ResNet-18 and ResNet-34 baselines, model profiling and evaluation |
+| **Vu Thi Kim Oanh** | 23BA14225 | Augmentation Ablations | SpecAugment vs. Mixup 6-way ablation study |
+| **Nguyen Thi Ngoc Anh** | 2411095 | Classification Layer Ablation | Dual-Token vs. GAP vs. GAP+Max vs. Attention Pooling on 1,188 patch tokens |
+| **Pham Gia Anh** | 2410084 | Model Scaling Comparison | ViT-Tiny vs. ViT-Small architecture comparison and FLOP/latency profiling |
+| **Nguyen Khai Minh** | 2410607 | Dataset Engineering & Documentation | ACE noise benchmark synthesis, FSD50K EDA, `DATA.md` |
+| **Dang Nhat Minh** | 2410667 | Robustness Pipeline | Algorithmic DSP colored noise & reverb augmentations, benchmark evaluation pipeline |

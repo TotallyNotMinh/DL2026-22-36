@@ -55,44 +55,13 @@ data_path/
 
 ### 2.1 Downloading FSD50K
 
-**Option A — Kaggle CLI (Recommended)**
+FSD50K is downloaded directly using the Kaggle dataset by `yousirui1` (pre-resampled to 16 kHz):
 
-The Kaggle distribution by `yousirui1` contains audio pre-resampled to 16 kHz, saving the resampling step:
 ```bash
 pip install kaggle
 # Place your ~/.kaggle/kaggle.json API token first
 kaggle datasets download -d yousirui1/fsd50k -p data/ --unzip
 # Result: data/fsd50k/{FSD50K.ground_truth/, FSD50K.dev_audio_16k/, FSD50K.eval_audio_16k/}
-```
-
-**Option B — Zenodo (Official, requires manual resampling)**
-```bash
-# Download the five ground-truth and audio archives from Zenodo record 4060432
-wget -c "https://zenodo.org/record/4060432/files/FSD50K.ground_truth.zip" -P data/fsd50k/
-wget -c "https://zenodo.org/record/4060432/files/FSD50K.dev_audio.z01"   -P data/fsd50k/
-wget -c "https://zenodo.org/record/4060432/files/FSD50K.dev_audio.z02"   -P data/fsd50k/
-wget -c "https://zenodo.org/record/4060432/files/FSD50K.dev_audio.zip"   -P data/fsd50k/
-wget -c "https://zenodo.org/record/4060432/files/FSD50K.eval_audio.zip"  -P data/fsd50k/
-
-# Unzip (multi-part)
-cd data/fsd50k && zip -s 0 FSD50K.dev_audio.zip --out combined_dev.zip && unzip combined_dev.zip
-unzip FSD50K.ground_truth.zip && unzip FSD50K.eval_audio.zip
-
-# Resample to 16 kHz using torchaudio (run from repo root)
-python - <<'EOF'
-import torchaudio, os
-from pathlib import Path
-for split, src_dir, dst_dir in [
-    ("dev",  "data/fsd50k/FSD50K.dev_audio",  "data/fsd50k/FSD50K.dev_audio_16k"),
-    ("eval", "data/fsd50k/FSD50K.eval_audio", "data/fsd50k/FSD50K.eval_audio_16k"),
-]:
-    Path(dst_dir).mkdir(parents=True, exist_ok=True)
-    for f in Path(src_dir).glob("*.wav"):
-        wav, sr = torchaudio.load(f)
-        if sr != 16000:
-            wav = torchaudio.functional.resample(wav, sr, 16000)
-        torchaudio.save(str(Path(dst_dir) / f.name), wav, 16000)
-EOF
 ```
 
 ### 2.2 Downloading & Generating the ACE Noise Benchmark
@@ -102,7 +71,7 @@ EOF
 The ACE corpus is freely available from Imperial College London:
 ```bash
 # Download Single-channel ambient noise recordings
-wget -c "http://ee.ic.ac.uk/naylor/ACEweb/Data/Single.zip" -P data/ace/
+wget -c "https://zenodo.org/records/6257551/files/ACE_Corpus_RIRN_Single.tbz2?download=1" -P data/ace/
 cd data/ace && unzip Single.zip
 # Expected layout: data/ace/Single/{Anechoic,Office_1,Office_2,...}/*.wav
 ```
@@ -189,8 +158,9 @@ Natural ambient acoustic noise (traffic, HVAC, wind turbulence) exhibits non-fla
    $$\alpha \sim \mathcal{U}(0.0, 2.0), \quad \text{SNR}_{\text{dB}} \sim \mathcal{U}(-5.0, 20.0)\text{ dB}$$
 3. **Calibrated Energy Scaling:**
    $$n_{\text{raw}}(t) = \mathcal{F}^{-1}\{W(f) \cdot H(f)\}$$
-   $$\text{RMS}(x) = \sqrt{\frac{1}{L}\sum_{t=1}^L x(t)^2}, \quad \sigma_{\text{noise}} = \frac{\text{RMS}(x)}{10^{\text{SNR}_{\text{dB}} / 20}}$$
-   $$x_{\text{aug}}(t) = x(t) + \sigma_{\text{noise}} \cdot \frac{n_{\text{raw}}(t)}{\text{RMS}(n_{\text{raw}}(t))}$$
+   $$\text{RMS}(x) = \sqrt{\frac{1}{L}\sum_{t=1}^L x(t)^2}, \quad \text{RMS}(n_{\text{raw}}) = \sqrt{\frac{1}{L}\sum_{t=1}^L n_{\text{raw}}(t)^2}$$
+   $$\sigma_{\text{noise}} = \text{RMS}(x) \cdot 10^{-\text{SNR}_{\text{dB}} / 20}$$
+   $$x_{\text{aug}}(t) = x(t) + \sigma_{\text{noise}} \cdot \frac{n_{\text{raw}}(t)}{\text{RMS}(n_{\text{raw}})}$$
 
 ### 4.3 Schroeder Room Reverberation Modeling
 Simulates late diffuse room reflections without pre-recorded impulse response files:
@@ -201,23 +171,77 @@ where $T_{60} \in [0.15, 0.60]\text{ s}$ and $\text{wet} \in [0.10, 0.40]$.
 
 ---
 
-## 5. Systematic In-Distribution Ablation Study (Clean FSD50K)
+## 5. Systematic In-Distribution Augmentation Experiments (Clean FSD50K)
 
-Evaluated across 6 isolated 30-epoch training runs on the identical ViT-Tiny (CLS+DIST backbone, $5.7\text{M}$ parameters) under fixed baseline settings:
+This experiment systematically evaluates how individual and compound data augmentation strategies affect multi-label environmental sound classification performance under strictly controlled settings.
 
-| Configuration | Time Mask | Freq Mask | Mixup | Val mAP | Val mAUC | Static F1 ($\tau=0.50$) | Calib. Micro-F1 ($\tau^*$) | Top-1 Hit | Top-5 Hit |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **No Augmentation** | $\times$ | $\times$ | $\times$ | 0.5419 | 0.8999 | 0.6533 | 0.6620 ($\tau=0.35$) | 73.84% | 86.59% |
-| **Time Masking Only** | $\checkmark$ | $\times$ | $\times$ | 0.5396 | 0.8877 | 0.6521 | 0.6623 ($\tau=0.35$) | 73.19% | 85.95% |
-| **Freq Masking Only** | $\times$ | $\checkmark$ | $\times$ | 0.5417 | 0.9169 | 0.6448 | 0.6589 ($\tau=0.35$) | 73.76% | 87.05% |
-| **SpecAugment (Time+Freq)** | $\checkmark$ | $\checkmark$ | $\times$ | 0.5401 | 0.9242 | 0.6420 | 0.6585 ($\tau=0.35$) | 74.08% | 87.79% |
-| **Mixup Only** | $\times$ | $\times$ | $\checkmark$ | **0.5534** | 0.9174 | 0.6517 | **0.6695** ($\tau=0.30$) | **75.32%** | 88.06% |
-| **Full Pipeline (SpecAug + Mixup)** | $\checkmark$ | $\checkmark$ | $\checkmark$ | 0.5380 | **0.9351** | 0.6362 | 0.6674 ($\tau=0.30$) | 74.56% | **88.71%** |
+### 5.1 Training Setup & Ablation Controls
 
-### Key Findings:
-1. **Spectral Masking Delivers Negligible In-Distribution Gain:** Without Mixup, masking methods fluctuate within $\le 0.23\%$ mAP of baseline ($0.5396\text{--}0.5419$), which is within seed noise.
-2. **Mixup Provides True Regularization:** Standalone Mixup yields $+1.15\%$ Val mAP ($0.5534$), $+1.75\%$ mAUC ($0.9174$), and $+1.48\%$ Top-1 Hit ($75.32\%$).
-3. **Compound Augmentation Penalty:** Applying SpecAugment on top of Mixup drops mAP by $-1.54\%$ ($0.5534 \to 0.5380$) due to over-masking already diluted audio mixtures.
+To isolate the causal effects of SpecAugment (Time/Frequency Masking) and Mixup, all secondary augmentations (random time shifting, uniform noise, colored noise, reverberation) were disabled during ablation training:
+```bash
+--time-shift 0 --noise-level 0 --colored-noise-prob 0 --reverb-prob 0
+```
+
+All 6 models were trained for **30 epochs** on the identical ViT-Tiny backbone ($\\text{CLS}+\\text{DIST}$, $5.7\\text{M}$ parameters) using `DistributedWeightedSampler` on FSD50K.
+
+#### Exact CLI Flags Per Run
+FM = `--freq-mask`, TM = `--time-mask`, MX = `--mixup-prob`, TS = `--time-shift`, NL = `--noise-level`, CN = `--colored-noise-prob`, RV = `--reverb-prob`:
+
+| Run | FM | TM | MX | TS | NL | CN | RV |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `no_aug` | 0 | 0 | 0.0 | 0 | 0.00 | 0.0 | 0.0 |
+| `time_mask` | 0 | 192 | 0.0 | 0 | 0.00 | 0.0 | 0.0 |
+| `freq_mask` | 48 | 0 | 0.0 | 0 | 0.00 | 0.0 | 0.0 |
+| `time_freq_mask` | 48 | 192 | 0.0 | 0 | 0.00 | 0.0 | 0.0 |
+| `mixup` | 0 | 0 | 0.5 | 0 | 0.00 | 0.0 | 0.0 |
+| `full` | 48 | 192 | 0.5 | 0 | 0.00 | 0.0 | 0.0 |
+| **Baseline ViT-Tiny (production)** | 48 | 192 | 0.5 | 10 | 0.05 | 0.5 | 0.3 |
+
+**Shared reproduction command template:**
+```bash
+torchrun --nproc_per_node=2 scripts/train_classifier.py \
+  --data-path data/fsd50k --arch tiny --batch-size 12 \
+  --num-epoch 30 --patience 30 \
+  --encoder-lr 5e-5 --head-lr 5e-4 \
+  --time-shift 0 --noise-level 0 \
+  --colored-noise-prob 0 --reverb-prob 0 \
+  --freq-mask <FM> --time-mask <TM> --mixup-prob <MX> \
+  --checkpoint-dir checkpoints/<run_name>/
+```
+
+### 5.2 Validation Results (Epoch 30/30)
+
+| Configuration | Time Mask | Freq Mask | Mixup | Val mAP | Val mAUC | Static F1 ($\\tau=0.50$) | Calib. Micro-F1 ($\\tau^*$) | Macro-F1 ($\\tau=0.50$) | Top-1 Hit | Top-5 Hit |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **No Augmentation** | $\\times$ | $\\times$ | $\\times$ | 0.5396 | 0.8877 | **0.6520** | 0.6620 ($\\tau=0.35$) | **0.4975** | 73.84% | 86.59% |
+| **Time Masking Only** | $\\checkmark$ | $\\times$ | $\\times$ | 0.5386 | 0.9001 | 0.6502 | 0.6623 ($\\tau=0.35$) | 0.4962 | 73.19% | 85.95% |
+| **Freq Masking Only** | $\\times$ | $\\checkmark$ | $\\times$ | 0.5400 | 0.9159 | 0.6391 | 0.6589 ($\\tau=0.35$) | 0.4720 | 73.76% | 87.05% |
+| **SpecAugment (Time+Freq)** | $\\checkmark$ | $\\checkmark$ | $\\times$ | 0.5383 | 0.9228 | 0.6405 | 0.6585 ($\\tau=0.35$) | 0.4637 | 74.08% | 87.79% |
+| **Mixup Only** | $\\times$ | $\\times$ | $\\checkmark$ | **0.5523** | 0.9153 | 0.6484 | **0.6695** ($\\tau=0.30$) | 0.4808 | **75.32%** | 88.06% |
+| **Full Pipeline (SpecAug + Mixup)** | $\\checkmark$ | $\\checkmark$ | $\\checkmark$ | 0.5380 | **0.9351** | 0.6361 | 0.6674 ($\\tau=0.30$) | 0.4347 | 74.56% | **88.71%** |
+
+### 5.3 Detailed Findings Per Augmentation Method
+
+1. **No Augmentation (`no_aug`):**
+   - Yields the highest uncalibrated F1 scores (**0.6520 Micro-F1, 0.4975 Macro-F1**), demonstrating that without probability threshold tuning, training on pristine spectrograms avoids logit distribution compression.
+2. **Time Masking (`time_mask`):**
+   - Increases mAUC ($0.8877 \\to 0.9001$), but slightly depresses mAP ($0.5386$) because blanking out temporal slices occasionally erases transient, short-duration acoustic onsets (e.g., clicks, gunshots).
+3. **Frequency Masking (`freq_mask`):**
+   - Delivers moderate mAP ($0.5400$) and substantial mAUC gains ($0.9159$), forcing the model to rely on multi-band harmonics rather than narrow dominant formants.
+4. **Time + Frequency Masking (`time_freq_mask`):**
+   - Further boosts mAUC to **0.9228**, but slightly degrades F1 scores under fixed thresholds due to excessive spectro-temporal deletion.
+5. **Mixup Only (`mixup`):**
+   - Achieves the **highest validation mAP (0.5523)**, representing a $+1.27\\%$ gain over baseline. By convexly interpolating audio waveforms and multi-hot label vectors, Mixup provides organic multi-source scene simulation.
+6. **Full Compound Augmentation (`full`):**
+   - Achieves the highest global ranking discrimination (**0.9351 mAUC**), but suffers from the lowest Macro-F1 (**0.4347**).
+
+### 5.4 Critical Analysis: Why Full Augmentation is Not Justified over Mixup
+
+A central question in designing the augmentation pipeline is whether the higher mAUC of Full Augmentation ($0.9351$ vs. $0.9153$) justifies deploying the full compound pipeline. Under empirical scrutiny, **it is not justified**:
+
+1. **FSD50K Metric Priority (mAP over mAUC):** In multi-label sound classification across 200 categories, each clip has an average of only $1.3$ positive labels ($>99.3\\%$ of classes per clip are true negatives). In such severe class imbalance, mAUC (ROC-AUC) is easily inflated by the massive volume of easy negatives; heavy regularization pushes negative logits close to zero, boosting AUC while masking poor positive retrieval. In contrast, mAP directly measures Precision-Recall on positive detections. Mixup achieves the highest validation mAP ($0.5523$ vs. $0.5380$ for Full) and highest test mAP across clean ($0.5124$ vs. $0.5056$) and adverse noise conditions ($0.3866$ vs. $0.3657$ at $+10\\text{ dB}$ SNR).
+2. **Compound Over-Corruption & Tail-Class Collapse:** In Full Augmentation, clips are first linearly mixed (halving individual signal energy), and then subjected to dual time (192 frames) and frequency (48 bins) masking. This zeroes out 30–40% of the already diluted spectrogram. For subtle or rare classes (clicks, snaps, faint whistles), the discriminative acoustic signal is wiped out while the loss still penalizes the model for missing the label. This causes severe tail-class collapse, shown by the lowest Macro-F1 among all configurations ($0.4347$ vs. $0.4808$ for Mixup, a $-4.61\\%$ penalty).
+3. **Physical Acoustic Realism:** Mixup naturally mirrors acoustic wave superposition in the physical world ($s(t) = s_1(t) + s_2(t)$), providing organic multi-source scene simulation. Standalone Mixup achieves the optimal Pareto frontier between acoustic regularization and signal integrity under a standard 30-epoch training budget.
 
 ---
 
