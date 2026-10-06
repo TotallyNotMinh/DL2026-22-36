@@ -94,7 +94,7 @@ We conduct all primary model training and validation on FSD50K~\cite{fonseca2021
 \begin{itemize}
     \item \textbf{Official URL:} \url{https://zenodo.org/record/4060432}
     \item \textbf{Vocabulary:} 200 sound classes hierarchically organized into musical instruments, human sounds, domestic sounds, and environmental soundscapes.
-    \item \textbf{Split Partitions:} Standard evaluation split consisting of a Development set (36,796 training clips, $\sim 69$ hours; 4,170 validation clips, $\sim 11$ hours; totaling $\sim 80$ hours) and a held-out Evaluation split (10,231 clips, $\sim 28$ hours).
+    \item \textbf{Split Partitions:} Standard evaluation split consisting of a Development set (36,796 training clips, $\sim 69$ hours; 4,170 validation clips, $\sim 11$ hours; totaling $\sim 80$ hours) and a held-out Evaluation split (10,231 clips, $\sim 28$ hours). A comprehensive exploratory data analysis of class distributions, polyphony rates, and duration characteristics across all $51,197$ clips is provided in Appendix Figure~\ref{fig:fsd50k_full_eda}.
 \end{itemize}
 
 \subsection{Acoustic Noise Benchmark: ACE Dataset}
@@ -670,6 +670,22 @@ Figure~\ref{fig:final_training_curve} illustrates the training loss convergence 
 \includegraphics[width=0.88\textwidth]{figures/final_model_training_curve.png}
 \caption{Training loss convergence and validation mAP progression across 30 epochs for the Proposed Robust ViT-Tiny model.}
 \label{fig:final_training_curve}
+\end{figure}
+
+\section{FSD50K Exploratory Data Analysis and Dataset Characteristics}
+\label{sec:fsd50k_eda}
+Figure~\ref{fig:fsd50k_full_eda} provides a comprehensive exploratory data analysis across the $51,197$ clips and 200 sound classes of FSD50K:
+\begin{itemize}
+    \item \textbf{Class Frequency Imbalance:} The dataset exhibits an extreme long-tail distribution. Dominant head classes such as \emph{Music} ($14,739$ clips, $28.8\%$) and \emph{Musical instrument} ($14,703$ clips, $28.7\%$) account for over a quarter of all annotations, whereas rare tail classes such as \emph{Tabla} ($97$ clips, $0.19\%$), \emph{Accordion} ($102$ clips, $0.20\%$), and \emph{Typewriter} ($102$ clips, $0.20\%$) are represented by fewer than 110 clips across the entire corpus.
+    \item \textbf{Multi-Label Polyphony:} Consistent with open-domain acoustic environments, $84.3\%$ of clips ($43,170$ clips) contain concurrent multi-label annotations, averaging $2.99$ active sound event categories per clip (with a maximum of $22$ concurrent labels on a single clip), while single-label clips account for only $15.7\%$ ($8,027$ clips).
+    \item \textbf{Clip Duration Distribution:} Raw clip durations span from $0.30\text{ s}$ up to $550.25\text{ s}$, with a mean duration of $7.64\text{ s}$ and a median of $5.00\text{ s}$ ($108.6$ total hours across $51,197$ clips; $25\%\text{--}75\%$ interquartile range: $1.96\text{ s}\text{--}10.58\text{ s}$). This distribution directly informs our standardized $10.0\text{ s}$ temporal windowing with zero-padding and random/center cropping.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fsd50k_full_eda.png}
+\caption{Comprehensive exploratory data analysis of the FSD50K dataset ($N = 51,197$ clips across 200 classes). Top-left: 25 most frequent sound classes; top-right: 25 least frequent tail classes; bottom-left: multi-label polyphony distribution showing $84.3\%$ concurrent event labels; bottom-right: clip duration distribution (mean $7.64\text{ s}$, median $5.00\text{ s}$).}
+\label{fig:fsd50k_full_eda}
 \end{figure}
 
 \end{document}
