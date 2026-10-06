@@ -61,6 +61,17 @@ parser.add_argument("--lr-scheduler", type=str, default="plateau", choices=["pla
 args = parser.parse_args()
 
 
+def ram_log():
+    """Host RAM use, to diagnose OOM kills (needs psutil, preinstalled on Kaggle)."""
+    try:
+        import psutil
+        main = psutil.Process().memory_info().rss / 2**30
+        host = psutil.virtual_memory()
+        return f"[RAM] main proc {main:.1f} GB | host used {host.percent:.0f}% of {host.total / 2**30:.0f} GB"
+    except Exception:
+        return "[RAM] psutil unavailable"
+
+
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -232,7 +243,6 @@ def train():
         shuffle=(train_sampler is None),
         num_workers=args.num_workers,
         pin_memory=(device.type == "cuda"),
-        persistent_workers=(args.num_workers > 0),
         worker_init_fn=seed_worker,
     )
 
@@ -240,9 +250,8 @@ def train():
         val_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=min(2, args.num_workers),  # few + persistent: re-forking workers every epoch spiked host RAM -> OOM-killed
+        num_workers=min(2, args.num_workers),  # non-persistent workers: RAM is released after every epoch (host OOM kills)
         pin_memory=(device.type == "cuda"),
-        persistent_workers=(args.num_workers > 0),
         worker_init_fn=seed_worker,
     ) if is_main else None
 
@@ -411,6 +420,9 @@ def train():
             del val_pbar
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+
+        if is_main:
+            print(ram_log())
 
         # ============== Sync the plateau scheduler across ranks ==============
         # Only rank 0 computed val_map above; every rank must step the
