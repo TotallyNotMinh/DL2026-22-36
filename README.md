@@ -11,7 +11,7 @@ Official repository for the Introduction to Deep Learning (DL2026) course projec
 
 ## 📖 Overview
 
-Real-world acoustic environments present severe corruptions from non-stationary background noise and reverberation. While state-of-the-art Audio Spectrogram Transformers (AST) achieve exceptional performance on curated clean datasets, their accuracy collapses when evaluated under out-of-distribution noise (e.g. dropping from **0.5066** mAP down to **0.2040** at $-5\text{ dB}$ SNR).
+Real-world acoustic environments present severe corruptions from non-stationary background noise and reverberation. While state-of-the-art Audio Spectrogram Transformers (AST) achieve exceptional performance on curated clean datasets, their accuracy collapses when evaluated under out-of-distribution noise (e.g. dropping from **0.5068** mAP down to **0.2040** at $-5\text{ dB}$ SNR).
 
 This project investigates and resolves this robustness gap on the **FSD50K** (200-class) benchmark:
 1. **Architectural Comparison (Setup 1):** Systematic benchmarking of CNN baselines (ResNet-18, ResNet-34, EfficientNet-B0, EfficientNet-B4) vs. Vision Transformers (ViT-Tiny, ViT-Small).

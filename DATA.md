@@ -48,10 +48,10 @@ data_path/
 ### Partition Breakdown
 | Split Name | Source File | Audio Directory | Number of Clips | Total Hours | Split Role |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| **Train** | `dev.csv` (`split == "train"`) | `FSD50K.dev_audio_16k/` | 36,796 | ~80.2h | Model training with data augmentations |
-| **Val** | `dev.csv` (`split == "val"`) | `FSD50K.dev_audio_16k/` | 4,170 | ~11.8h | Hyperparameter selection & checkpointing |
-| **Eval (Clean)**| `eval.csv` | `FSD50K.eval_audio_16k/` | 10,231 | ~24.1h | Primary held-out clean evaluation |
-| **Eval (Noisy)**| Benchmark Manifest | `data/evaluation_fsd50k/` | 10,231 $\times$ 4 | ~96.4h | Robustness evaluation under 4 SNR levels |
+| **Train** | `dev.csv` (`split == "train"`) | `FSD50K.dev_audio_16k/` | 36,796 | ~69h | Model training with data augmentations |
+| **Val** | `dev.csv` (`split == "val"`) | `FSD50K.dev_audio_16k/` | 4,170 | ~11h (~80h dev total) | Hyperparameter selection & checkpointing |
+| **Eval (Clean)**| `eval.csv` | `FSD50K.eval_audio_16k/` | 10,231 | ~28h | Primary held-out clean evaluation |
+| **Eval (Noisy)**| Benchmark Manifest | `data/evaluation_fsd50k/` | 10,231 $\times$ 4 | ~112h | Robustness evaluation under 4 SNR tiers |
 
 ### 2.1 Downloading FSD50K
 
@@ -182,7 +182,7 @@ To isolate the causal effects of SpecAugment (Time/Frequency Masking) and Mixup,
 --time-shift 0 --noise-level 0 --colored-noise-prob 0 --reverb-prob 0
 ```
 
-All 6 models were trained for **30 epochs** on the identical ViT-Tiny backbone ($\\text{CLS}+\\text{DIST}$, $5.7\\text{M}$ parameters) using `DistributedWeightedSampler` on FSD50K.
+All 6 ablation models were trained for **30 epochs** on the identical ViT-Tiny backbone ($\text{CLS}+\text{DIST}$, $5.7\text{M}$ parameters) using standard uniform sampling (`DistributedSampler`, $\text{CB} = \times$) on FSD50K. Class-balanced sampling (`DistributedWeightedSampler`, $\text{CB} = \checkmark$) was reserved exclusively for the proposed robust DSP models to isolate augmentation dynamics in the ablation grid.
 
 #### Exact CLI Flags Per Run
 FM = `--freq-mask`, TM = `--time-mask`, MX = `--mixup-prob`, TS = `--time-shift`, NL = `--noise-level`, CN = `--colored-noise-prob`, RV = `--reverb-prob`:
@@ -197,7 +197,6 @@ FM = `--freq-mask`, TM = `--time-mask`, MX = `--mixup-prob`, TS = `--time-shift`
 | `full` | 48 | 192 | 0.5 | 0 | 0.00 | 0.0 | 0.0 |
 | **Baseline ViT-Tiny (production)** | 48 | 192 | 0.5 | 10 | 0.05 | 0.5 | 0.3 |
 
-**Shared reproduction command template:**
 ```bash
 torchrun --nproc_per_node=2 scripts/train_classifier.py \
   --data-path data/fsd50k --arch tiny --batch-size 12 \
@@ -209,6 +208,20 @@ torchrun --nproc_per_node=2 scripts/train_classifier.py \
   --checkpoint-dir checkpoints/<run_name>/
 ```
 
+#### Kaggle Execution Paths & Checkpoint Layout
+When reproducing on Kaggle GPU instances:
+- **Dataset Path:** `/kaggle/input/datasets/yousirui1/fsd50k/fsd50k`
+- **Output Checkpoint Directory:** `/kaggle/working/checkpoints/`
+```text
+checkpoints/
+├── run_01_no_aug/            # Clean baseline (no augmentation)
+├── run_02_time_mask/         # Time masking only (TM = 192)
+├── run_03_frequency/         # Frequency masking only (FM = 48)
+├── run_04_time_frequency/    # SpecAugment (FM = 48, TM = 192)
+├── run_05_mixup/             # Mixup only (MX = 0.5)
+└── run_06_full/              # Compound pipeline (FM = 48, TM = 192, MX = 0.5)
+```
+
 ### 5.2 Validation Results (Epoch 30/30)
 
 | Configuration | Time Mask | Freq Mask | Mixup | Val mAP | Val mAUC | Static F1 ($\\tau=0.50$) | Calib. Micro-F1 ($\\tau^*$) | Macro-F1 ($\\tau=0.50$) | Top-1 Hit | Top-5 Hit |
@@ -218,7 +231,13 @@ torchrun --nproc_per_node=2 scripts/train_classifier.py \
 | **Freq Masking Only** | $\\times$ | $\\checkmark$ | $\\times$ | 0.5400 | 0.9159 | 0.6391 | 0.6589 ($\\tau=0.35$) | 0.4720 | 73.76% | 87.05% |
 | **SpecAugment (Time+Freq)** | $\\checkmark$ | $\\checkmark$ | $\\times$ | 0.5383 | 0.9228 | 0.6405 | 0.6585 ($\\tau=0.35$) | 0.4637 | 74.08% | 87.79% |
 | **Mixup Only** | $\\times$ | $\\times$ | $\\checkmark$ | **0.5523** | 0.9153 | 0.6484 | **0.6695** ($\\tau=0.30$) | 0.4808 | **75.32%** | 88.06% |
-| **Full Pipeline (SpecAug + Mixup)** | $\\checkmark$ | $\\checkmark$ | $\\checkmark$ | 0.5380 | **0.9351** | 0.6361 | 0.6674 ($\\tau=0.30$) | 0.4347 | 74.56% | **88.71%** |
+| **Full Pipeline (SpecAug + Mixup)** | $\checkmark$ | $\checkmark$ | $\checkmark$ | 0.5380 | **0.9351** | 0.6361 | 0.6674 ($\tau=0.30$) | 0.4347 | 74.56% | **88.71%** |
+
+#### Metric-by-Metric Rankings
+- **mAP Ranking:** Mixup (**0.5523**) > Freq Mask (0.5400) > No Aug (0.5396) > Time Mask (0.5386) > Time+Freq (0.5383) > Full Aug (0.5380)
+- **mAUC Ranking:** Full Aug (**0.9351**) > Time+Freq (0.9228) > Freq Mask (0.9159) > Mixup (0.9153) > Time Mask (0.9001) > No Aug (0.8877)
+- **Micro-F1 ($\tau=0.50$):** No Aug (**0.6520**) > Time Mask (0.6502) > Mixup (0.6484) > Time+Freq (0.6405) > Freq Mask (0.6391) > Full Aug (0.6361)
+- **Macro-F1 ($\tau=0.50$):** No Aug (**0.4975**) > Time Mask (0.4962) > Mixup (0.4808) > Freq Mask (0.4720) > Time+Freq (0.4637) > Full Aug (0.4347)
 
 ### 5.3 Detailed Findings Per Augmentation Method
 
