@@ -23,7 +23,7 @@
     citecolor=blue
 }
 
-\title{\textbf{Environmental Sound Recognition Under Unseen and Adverse Acoustic Conditions}}
+\title{\textbf{Environmental Sound Recognition Under Unseen Noise Types and Adverse Acoustic Conditions}}
 
 \author{
     Dao Chi Trung \quad
@@ -230,7 +230,7 @@ We evaluate architectural performance on clean FSD50K under standard training co
 
 \begin{table}[htbp]
 \centering
-\caption{Setup 1: Architectural Comparison on Clean FSD50K (Validation Split: 4,170 Clips; Held-Out Evaluation Split: 10,231 Clips). ViT models utilize default dual-token ($\text{CLS}+\text{DIST}$) pooling.}
+\caption{Setup 1: Architectural Comparison on Clean Held-Out FSD50K (10,231 Evaluation Clips). ViT models utilize default dual-token ($\text{CLS}+\text{DIST}$) pooling.}
 \label{tab:setup1_architectures}
 \vspace{2mm}
 \resizebox{\textwidth}{!}{
@@ -294,7 +294,7 @@ ViT-Small ($\text{CLS}+\text{DIST}$) & Transformer & 0.5288 & 0.3932 & 0.3457 & 
 \label{fig:spectrogram_corruption}
 \end{figure}
 
-As shown in Table~\ref{tab:arch_noise_degradation} and Figure~\ref{fig:arch_noise_curves}, all architectures degrade significantly as SNR decreases. Inverted residual convolutional networks with squeeze-and-excitation channel attention (EfficientNet-B0 and B4) display superior noise resilience ($-51.0\%$ to $-51.6\%$ relative drop), retaining the highest absolute mAP under severe noise ($0.2562\text{--}0.2613$). In contrast, standard residual networks (ResNet-18 and 34, which lack channel attention) degrade by $-54.5\%\text{--}-56.1\%$. While undefended ViT-Tiny exhibits the steepest relative degradation ($-59.7\%$, dropping to $0.2040$ mAP), scaling model capacity to ViT-Small ($0.2231$ mAP, $-57.8\%$) surpasses ResNet-18 ($0.2197$) and closely matches ResNet-34 ($0.2251$) at $-5\text{ dB}$. Thus, while unregularized compact Transformers lack local convolutional inductive biases and suffer heightened vulnerability to broadband noise floor shifts, increased model capacity substantially closes this gap even before applying noise-aware augmentation.
+As shown in Table~\ref{tab:arch_noise_degradation} and Figure~\ref{fig:arch_noise_curves}, all architectures degrade significantly as SNR decreases. EfficientNet architectures (B0 and B4) display the highest noise resilience ($-51.0\%$ to $-51.6\%$ relative drop), retaining the highest absolute mAP under severe noise ($0.2562\text{--}0.2613$). Standard residual networks (ResNet-18 and 34) degrade by $-54.5\%\text{--}-56.1\%$. While undefended ViT-Tiny exhibits the steepest relative degradation ($-59.7\%$, dropping to $0.2040$ mAP), scaling model capacity to ViT-Small ($0.2231$ mAP, $-57.8\%$) surpasses ResNet-18 ($0.2197$) and closely matches ResNet-34 ($0.2251$) at $-5\text{ dB}$, although its $-57.8\%$ relative drop remains larger than all CNN baselines and it remains substantially below EfficientNet ($0.2562\text{--}0.2613$). Thus, while unregularized compact Transformers lack local convolutional inductive biases and suffer heightened vulnerability to broadband noise, scaling capacity closes the absolute margin relative to standard ResNets even before applying noise-aware augmentation.
 
 \subsubsection{Effect of Acoustic Data Augmentation (RQ3)}
 Next, we measure the empirical impact of our proposed acoustic data augmentation framework. Table~\ref{tab:dsp_noise_gain} compares the proposed robust ViT-Tiny model (combining continuous colored noise, Schroeder reverberation, Mixup, and learned attention pooling) against both the baseline dual-token ViT-Tiny and the attention-pooling ViT-Tiny trained without noise synthesis.
@@ -326,7 +326,7 @@ SNR -5 dB   & 0.2040 & 0.2123 & 0.3037 & \textbf{0.3182} & \textbf{+56.0\%} & \t
 \label{fig:dsp_robustness_curve}
 \end{figure}
 
-As shown in Table~\ref{tab:dsp_noise_gain} and Figure~\ref{fig:dsp_robustness_curve}, physical DSP noise and reverberation synthesis largely accounts for the observed noise resilience. This is confirmed by evaluating head-matched pairs under identical conditions: adding DSP to the dual-token architecture lifts $-5\text{ dB}$ mAP from $0.2040 \to 0.3037$ ($+48.9\%$ relative gain), while adding DSP to the attention-pooling architecture lifts $-5\text{ dB}$ mAP from $0.2123 \to 0.3182$ ($+49.9\%$ relative gain). By contrast, comparing compound augmentation (\texttt{full}) against standalone \texttt{mixup} at $-5\text{ dB}$ shows a minor difference of only $0.0074$ mAP ($0.1926$ vs. $0.2000$, Table~\ref{tab:ablation_noise}), indicating that adding SpecAugment atop Mixup yields slightly diminishing returns under extreme noise. In isolation, SpecAugment does provide meaningful noise robustness over the unaugmented baseline ($0.1768$ vs. $0.1551$ at $-5\text{ dB}$, a $+0.0217$ mAP gain exceeding the $\Delta \ge 0.010$ threshold), but this is surpassed by the $+0.106$ mAP gain achieved by physical DSP noise synthesis. The specific contribution of class-balanced sampling remains unmeasured as an isolated ablation. 
+As shown in Table~\ref{tab:dsp_noise_gain} and Figure~\ref{fig:dsp_robustness_curve}, physical DSP noise and reverberation synthesis largely accounts for the observed noise resilience. This is confirmed by evaluating head-matched pairs under identical conditions: adding DSP to the dual-token architecture lifts $-5\text{ dB}$ mAP from $0.2040 \to 0.3037$ ($+48.9\%$ relative gain, $+0.0997$ absolute mAP), while adding DSP to the attention-pooling architecture lifts $-5\text{ dB}$ mAP from $0.2123 \to 0.3182$ ($+49.9\%$ relative gain, $+0.1059$ absolute mAP). By contrast, comparing compound augmentation (\texttt{full}) against standalone \texttt{mixup} at $-5\text{ dB}$ shows a minor difference of only $0.0074$ mAP ($0.1926$ vs. $0.2000$, Table~\ref{tab:ablation_noise}), indicating that adding SpecAugment atop Mixup yields slightly diminishing returns under extreme noise. In isolation, SpecAugment does provide meaningful noise robustness over the unaugmented baseline ($0.1768$ vs. $0.1551$ at $-5\text{ dB}$, a $+0.0217$ mAP gain exceeding the $\Delta \ge 0.010$ threshold), but this is surpassed by the $\sim +0.106$ mAP gain achieved by physical DSP noise synthesis on the attention-pooling architecture ($+0.0997$ on dual-token). Note that our robust DSP training recipe bundles continuous colored noise, Schroeder reverberation, and class-balanced sampling while omitting SpecAugment; the isolated impact of class-balanced sampling remains unablated. 
 
 \subsection{Setup 3: Systematic Ablation Studies}
 Due to compute budget constraints, all fine-grained ablations (augmentations, threshold sweeping, and pooling heads) were anchored on the ViT-Tiny architecture.
@@ -336,20 +336,20 @@ We isolate the empirical effects of Time Masking, Frequency Masking, SpecAugment
 
 \begin{table}[htbp]
 \centering
-\caption{Setup 3.1: Systematic Augmentation Ablation Grid on Held-Out FSD50K (10,231 Evaluation Clips, ViT-Tiny CLS+DIST Backbone)}
+\caption{Setup 3.1: Systematic Augmentation Ablation Grid on Held-Out FSD50K (10,231 Evaluation Clips, ViT-Tiny CLS+DIST Backbone). F1 metrics evaluated at default uncalibrated decision threshold $\tau=0.50$.}
 \label{tab:ablation_aug}
 \vspace{2mm}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lccccccc}
+\begin{tabular}{lcccccccc}
 \toprule
-\textbf{Augmentation Configuration} & \textbf{TM} & \textbf{FM} & \textbf{MX} & \textbf{Eval mAP} & \textbf{Eval mAUC} & \textbf{Eval Micro-F1} & \textbf{Eval Top-1} \\
+\textbf{Augmentation Configuration} & \textbf{TM} & \textbf{FM} & \textbf{MX} & \textbf{Eval mAP} & \textbf{Eval mAUC} & \textbf{Eval Micro-F1 ($\tau=0.50$)} & \textbf{Eval Macro-F1 ($\tau=0.50$)} & \textbf{Eval Top-1} \\
 \midrule
-No Augmentation (Baseline) & $\times$ & $\times$ & $\times$ & 0.4869 & 0.8645 & 0.5596 & 73.77\% \\
-Time Masking Only & $\checkmark$ & $\times$ & $\times$ & 0.4859 & 0.8517 & 0.5636 & 73.97\% \\
-Frequency Masking Only & $\times$ & $\checkmark$ & $\times$ & 0.4933 & 0.8837 & 0.5522 & 73.57\% \\
-Time + Freq Masking (SpecAugment) & $\checkmark$ & $\checkmark$ & $\times$ & 0.4972 & 0.8918 & 0.5526 & 74.14\% \\
-\textbf{Mixup Only} & $\times$ & $\times$ & $\checkmark$ & \textbf{0.5124} & 0.8859 & \textbf{0.5657} & \textbf{75.97\%} \\
-Full Pipeline (SpecAugment + Mixup) & $\checkmark$ & $\checkmark$ & $\checkmark$ & 0.5056 & \textbf{0.9045} & 0.5474 & 75.18\% \\
+No Augmentation (Baseline) & $\times$ & $\times$ & $\times$ & 0.4869 & 0.8645 & 0.5596 & 0.4378 & 73.77\% \\
+Time Masking Only & $\checkmark$ & $\times$ & $\times$ & 0.4859 & 0.8517 & 0.5636 & \textbf{0.4490} & 73.97\% \\
+Frequency Masking Only & $\times$ & $\checkmark$ & $\times$ & 0.4933 & 0.8837 & 0.5522 & 0.4273 & 73.57\% \\
+Time + Freq Masking (SpecAugment) & $\checkmark$ & $\checkmark$ & $\times$ & 0.4972 & 0.8918 & 0.5526 & 0.4210 & 74.14\% \\
+\textbf{Mixup Only} & $\times$ & $\times$ & $\checkmark$ & \textbf{0.5124} & 0.8859 & \textbf{0.5657} & 0.4378 & \textbf{75.97\%} \\
+Full Pipeline (SpecAugment + Mixup) & $\checkmark$ & $\checkmark$ & $\checkmark$ & 0.5056 & \textbf{0.9045} & 0.5474 & 0.3974 & 75.18\% \\
 \bottomrule
 \end{tabular}
 }
@@ -357,9 +357,9 @@ Full Pipeline (SpecAugment + Mixup) & $\checkmark$ & $\checkmark$ & $\checkmark$
 
 \textbf{Masking Fluctuations are Marginal:} As detailed in Table~\ref{tab:ablation_aug}, variations across spectral masking configurations without Mixup provide limited in-distribution representation gain. While Time Masking alone yields a neutral effect ($-0.10$ points mAP), combining Time and Frequency Masking (SpecAugment) achieves $0.4972$ mAP, crossing the practical effect-size threshold ($+1.03$ points) compared to the unaugmented baseline ($0.4869$).
 
-\textbf{Mixup Provides Substantial Regularization:} Standalone Mixup delivers the most substantial positive signal on clean audio ($+2.55$ points mAP to $0.5124$, $+2.14$ points mAUC to $0.8859$, Top-1 Hit $+2.20$ points to $75.97\%$). By convexly combining multi-label targets and spectrograms, Mixup enforces smoother decision boundaries reflecting acoustic polyphony without discarding structural features.
+\textbf{Mixup Provides Substantial Regularization:} Standalone Mixup delivers the most substantial positive signal in clean mAP and retrieval accuracy ($+2.55$ points mAP to $0.5124$, Top-1 Hit $+2.20$ points to $75.97\%$, alongside $+2.14$ points mAUC to $0.8859$). In contrast, while Time Masking slightly degrades distribution ranking ($-1.28$ points mAUC), Frequency Masking and compound SpecAugment produce larger mAUC gains ($+1.92$ and $+2.73$ points), culminating in Full Augmentation achieving the highest overall mAUC ($0.9045$, $+4.00$ points over baseline). By convexly combining multi-label targets and spectrograms, Mixup enforces smoother decision boundaries reflecting acoustic polyphony without discarding structural features.
 
-\textbf{Diminishing Returns of Full Compound Augmentation:} Full Augmentation achieves the highest overall mAUC ($0.9045$), but drops in mAP ($0.5056$) compared to Mixup alone, and suffers significant tail-class recall compression (Macro-F1 drops to $0.3974$, compared to $0.4378$ for both \texttt{no\_aug} and \texttt{mixup}). We hypothesize that in highly sparse multi-label regimes ($>99.3\%$ negative class priors), aggressive spectral masking suppresses false positives across the vast pool of true negatives (elevating overall AUC), but can simultaneously obscure subtle positive event cues in low-prevalence classes. Under ACE noise corruption (Appendix Table~\ref{tab:ablation_noise} and Figure~\ref{fig:ablation_curves}), Mixup alone maintains the highest resilience ($0.2000$ mAP at $-5\text{ dB}$ vs. $0.1551$ for \texttt{no\_aug} and $0.1926$ for \texttt{full}). For single-seed evaluations, we adopt a practical effect-size threshold of $\Delta \ge 0.010$ ($1.0$ point mAP) as our experimental rule of thumb; by this benchmark, the $0.0074$ mAP margin between Mixup and Full at $-5\text{ dB}$ falls within the practical indifference zone, though standalone Mixup systematically preserves weak transient acoustic events from spectral erasure. Note that in Table~\ref{tab:setup1_architectures}, the baseline ViT-Tiny achieved $0.5068$ clean evaluation mAP under standard AST training (with time shift $\pm 10$ and noise $0.05$), whereas the isolated \texttt{no\_aug} run with all secondary augmentations disabled achieved $0.4869$ (Appendix Table~\ref{tab:ablation_noise}).
+\textbf{Diminishing Returns of Full Compound Augmentation:} Full Augmentation achieves the highest overall mAUC ($0.9045$), but drops in mAP ($0.5056$) compared to Mixup alone, and exhibits lower tail-class recall at uncalibrated $\tau=0.50$ (Macro-F1 drops to $0.3974$, compared to $0.4378$ for both \texttt{no\_aug} and \texttt{mixup}, Table~\ref{tab:ablation_aug}). We hypothesize that in highly sparse multi-label distributions ($>99.3\%$ negative class priors), aggressive spectral masking suppresses false positives across the vast pool of true negatives (elevating overall AUC), but can simultaneously obscure subtle positive event cues in low-prevalence classes. Under ACE noise corruption (Appendix Table~\ref{tab:ablation_noise} and Figure~\ref{fig:ablation_curves}), Mixup alone maintains the highest resilience ($0.2000$ mAP at $-5\text{ dB}$ vs. $0.1551$ for \texttt{no\_aug} and $0.1926$ for \texttt{full}). For single-seed evaluations, we adopt a practical effect-size threshold of $\Delta \ge 0.010$ ($1.0$ point mAP) as our experimental rule of thumb; by this benchmark, the $0.0074$ mAP margin between Mixup and Full at $-5\text{ dB}$ falls within the practical indifference zone. Note that in Table~\ref{tab:setup1_architectures}, the baseline ViT-Tiny achieved $0.5068$ clean evaluation mAP under standard AST training (with time shift $\pm 10$ and noise $0.05$), whereas the isolated \texttt{no\_aug} run with all secondary augmentations disabled achieved $0.4869$ (Appendix Table~\ref{tab:ablation_noise}).
 
 \subsubsection{Ablation Study 2: Decision Threshold Sweeping and Probability Calibration}
 \label{sec:threshold_sweeping}
@@ -401,8 +401,8 @@ Under our adopted practical effect-size threshold ($\Delta \ge 0.010$ mAP), Lear
 \subsection{Architectural Trade-offs and Inductive Biases}
 Our empirical findings reveal complementary strengths across convolutional and Transformer paradigms:
 \begin{enumerate}
-    \item \textbf{Convolutional Efficiency:} Inverted residual networks (EfficientNet-B0 and EfficientNet-B4) demonstrate superior compute-to-accuracy efficiency on clean spectrograms, with EfficientNet-B4 achieving highest clean precision ($0.5396$ mAP, $0.6114$ F1) and EfficientNet-B0 providing extreme efficiency ($0.5233$ mAP at $1.05\text{ GMACs}$). Depthwise separable convolutions efficiently capture compact, local spectro-temporal textures. Under undefended noise, EfficientNet architectures exhibit the strongest resilience ($-51.0\%$ relative drop for B0), whereas ResNet baselines degrade similarly to ViT-Small ($-54.5\%\text{ to }-56.1\%$ drop).
-    \item \textbf{Self-Attention and Global Receptive Fields:} Audio Spectrogram Transformers provide competitive discriminability ($0.5068\text{--}0.5288$ clean mAP), strong distribution ranking for ViT-Tiny ($0.9106$ mAUC), and high Top-1 retrieval for the scaled ViT-Small ($76.54\%$, exceeding all CNN baselines), benefiting from global multi-head self-attention across distant frequency bands.
+    \item \textbf{Convolutional Efficiency:} Inverted residual networks (EfficientNet-B0 and EfficientNet-B4) demonstrate superior compute-to-accuracy efficiency on clean spectrograms, with EfficientNet-B4 achieving highest clean precision ($0.5396$ mAP, $0.6114$ F1) and EfficientNet-B0 providing extreme efficiency ($0.5233$ mAP at $1.05\text{ GMACs}$). Depthwise separable convolutions efficiently capture compact, local spectro-temporal textures. Under undefended noise, EfficientNet architectures exhibit the strongest resilience ($-51.0\%$ to $-51.6\%$ relative drop), whereas ResNet baselines degrade by $-54.5\%$ to $-56.1\%$; scaling from ViT-Tiny ($-59.7\%$) to ViT-Small ($-57.8\%$) closes the absolute margin relative to standard ResNets ($0.2231$ mAP at $-5\text{ dB}$).
+    \item \textbf{Self-Attention and Global Receptive Fields:} Audio Spectrogram Transformers provide competitive discriminability ($0.5068\text{--}0.5288$ clean mAP), strong distribution ranking for ViT-Tiny ($0.9106$ mAUC), and high Top-1 retrieval for the scaled ViT-Small ($76.54\%$, exceeding all CNN baselines), hypothesized to benefit from global multi-head self-attention across distant frequency bands.
     \item \textbf{Token Pooling Flexibility:} ViT's patch tokenization allows dynamic learned attention pooling to selectively emphasize active acoustic events, outperforming rigid dual-token classification by $+0.013$ clean test mAP ($0.5068 \to 0.5199$) and providing an effective substrate for acoustic noise training.
 \end{enumerate}
 
@@ -425,23 +425,24 @@ While compound augmentation (SpecAugment + Mixup) improves overall held-out eval
 \texttt{Rattle} & Mode 1: Fine-Grained Percussive & 0.1210 & 0.0576 & $-52.4\%$ & Discrete rapid impulse impacts erased by temporal masking \\
 \texttt{Frying\_(food)} & Mode 1: High-Frequency Sizzle & 0.5402 & 0.2930 & $-45.8\%$ & Delicate high-frequency sizzle bursts obscured by frequency masking \\
 \texttt{Marimba} & Mode 3: Resonant Harmonics & 0.3756 & 0.2071 & $-44.9\%$ & Precise percussive wooden resonator overtones erased by masking \\
-\texttt{Doorbell} & Mode 1: Short Impulsive Chime & 0.2834 & 0.1598 & $-43.6\%$ & Transient chime burst suppressed when paired with louder audio \\
+\texttt{Doorbell} & Mode 1: Short Impulsive Chime & 0.2834 & 0.1598 & $-43.6\%$ & Short impulsive chime burst erased or obscured under compound augmentation \\
 \bottomrule
 \end{tabular}
 }
 \end{table}
 
+Because these degradation patterns are observed from the aggregate difference between \texttt{no\_aug} and \texttt{full}, the underlying failure mechanisms represent qualitative hypotheses:
 \begin{enumerate}
-    \item \textbf{Failure Mode 1: Erasure of High-Frequency and Fast Transients:} Sound events defined by short, rapid impulses (\texttt{Doorbell}, \texttt{Rattle}) or delicate high-frequency energy textures (\texttt{Packing\_tape}, \texttt{Frying\_(food)}) are highly vulnerable to SpecAugment. When random time masks overlap with brief acoustic onsets or frequency masks erase narrow spectral bursts, the model is deprived of the primary discriminative cues.
-    \item \textbf{Failure Mode 2: Polyphonic Mixture Confusion from Mixup:} In classes characterized by subtle conversational speech (\texttt{Conversation}) or continuous low-amplitude engine rumbles (\texttt{Boat\_and\_vehicle}), linear convex combination with dominant background audio in Mixup frequently submerges the target event below the perceptual floor, degrading precision.
-    \item \textbf{Failure Mode 3: Disruption of Harmonic Resonance:} Melodic percussive instruments such as \texttt{Marimba} rely on precise harmonic relations between the fundamental strike and wooden resonator overtones; frequency masking distorts these relative overtone ratios.
+    \item \textbf{Hypothesized Mode 1: Erasure of High-Frequency and Fast Transients:} Sound events defined by short, rapid impulses (\texttt{Doorbell}, \texttt{Rattle}) or delicate high-frequency energy textures (\texttt{Packing\_tape}, \texttt{Frying\_(food)}) are particularly vulnerable under compound augmentation, likely when random spectral masks obscure their narrow discriminative spectro-temporal cues.
+    \item \textbf{Hypothesized Mode 2: Polyphonic Mixture Confusion:} In classes characterized by subtle conversational speech (\texttt{Conversation}) or continuous low-amplitude engine rumbles (\texttt{Boat\_and\_vehicle}), linear convex combination with dominant background audio in Mixup can submerge the target event below the perceptual floor, degrading precision.
+    \item \textbf{Hypothesized Mode 3: Disruption of Harmonic Resonance:} Melodic percussive instruments such as \texttt{Marimba} rely on precise harmonic relations between the fundamental strike and wooden resonator overtones; frequency masking distorts these relative overtone ratios.
 \end{enumerate}
 
 \subsection{Limitations and Threats to Validity}
 \label{sec:limitations}
 We highlight four methodological limitations of this study:
 \begin{enumerate}
-    \item \textbf{Compound Recipe in the Robust Model:} The proposed robust model combines four distinct elements: continuous colored noise, Schroeder reverberation, learned attention pooling, and class-balanced sampling (\texttt{DistributedWeightedSampler}), while disabling SpecAugment. Although the matched attention-pooling comparison in Table~\ref{tab:dsp_noise_gain} isolates a $+49.9\%$ relative gain ($0.2123 \to 0.3182$) largely attributable to the acoustic physical noise simulation (with the margin between Full augmentation and Mixup-only accounting for only $0.0074$ mAP at $-5\text{ dB}$ in Table~\ref{tab:ablation_noise}), the class-balanced sampler remains unmeasured as an isolated ablation.
+    \item \textbf{Compound Recipe in the Robust Model:} The proposed robust model combines four distinct elements: continuous colored noise, Schroeder reverberation, learned attention pooling, and class-balanced sampling (\texttt{DistributedWeightedSampler}), while omitting SpecAugment. Although head-matched comparisons in Table~\ref{tab:dsp_noise_gain} isolate a $+48.9\%\text{ to }+49.9\%$ relative gain ($+0.0997\text{ to }+0.1059$ mAP at $-5\text{ dB}$) largely attributable to physical acoustic synthesis, the recipe bundles these changes and the isolated impact of class-balanced sampling remains unablated.
     \item \textbf{Single-Seed Evaluations:} Due to compute budget constraints on FSD50K, experiments were conducted with a single random seed ($42$). While primary macro-level conclusions (e.g., the $+56.0\%$ relative noise gain, representing an absolute improvement of $+0.1142$ mAP at $-5\text{ dB}$) decisively exceed our adopted practical effect-size threshold ($\Delta \ge 0.010$), fine-grained margins below this threshold should be interpreted as empirical tendencies rather than definitive separations.
     \item \textbf{Architecture-Specific Learning Rate Tuning:} Learning rates were maintained at established AST and CMKD defaults ($5 \times 10^{-5}$ for Transformers, $5 \times 10^{-4}$ for CNNs) without exhaustive per-architecture grid searches, representing a practical constraint.
     \item \textbf{Acoustic Domain Scope:} The ACE evaluation benchmark comprises indoor room ambient noises (offices, lecture halls, HVAC fans, babble). While directly representative of indoor acoustic monitoring, outdoor soundscapes (turbulent open-air wind shear, high-speed traffic) involve complex acoustic dispersion patterns that warrant future outdoor benchmarking.
@@ -481,10 +482,10 @@ Dang Nhat Minh & 2410667 & Robustness Pipeline & DSP colored noise \& reverb, be
 \section{Conclusion and Answers to Research Questions}
 This investigation presented a systematic empirical benchmark of multi-label environmental sound recognition on FSD50K under clean and adverse acoustic conditions. Our findings provide direct answers to the four core research questions:
 \begin{itemize}
-    \item \textbf{Answer to RQ1 (Architectural Inductive Bias):} Inverted residual convolutional networks (EfficientNet-B4 at $0.5396$ mAP, EfficientNet-B0 at $0.5233$ mAP) deliver the highest clean precision and parameter efficiency, while retaining the highest resilience under undefended noise ($-51.0\%$ relative drop at $-5\text{ dB}$). Audio Spectrogram Transformers deliver competitive discrimination ($0.5068\text{--}0.5288$ clean mAP), strong distribution ranking for ViT-Tiny ($0.9106$ mAUC), and superior Top-1 retrieval for the scaled ViT-Small ($76.54\%$, exceeding all CNN baselines), benefiting from global self-attention across distant frequency patches.
+    \item \textbf{Answer to RQ1 (Architectural Inductive Bias):} Inverted residual convolutional networks (EfficientNet-B4 at $0.5396$ mAP, EfficientNet-B0 at $0.5233$ mAP) deliver the highest clean precision and parameter efficiency, while retaining the highest resilience under undefended noise ($-51.0\%$ relative drop at $-5\text{ dB}$). Audio Spectrogram Transformers deliver competitive discrimination ($0.5068\text{--}0.5288$ clean mAP), strong distribution ranking for ViT-Tiny ($0.9106$ mAUC), and superior Top-1 retrieval for the scaled ViT-Small ($76.54\%$, exceeding all CNN baselines), hypothesized to benefit from global multi-head self-attention across distant frequency patches.
     \item \textbf{Answer to RQ2 (Token Pooling Mechanisms):} Attention pooling achieved the strongest held-out evaluation mAP ($0.5199$, $+0.0131$ over the dual-token baseline of $0.5068$), while unweighted GAP ($0.5126$, $\Delta = +0.0058$) and GAP+Max ($0.5051$) are not distinguishable from the baseline under our adopted practical effect-size threshold ($\Delta \ge 0.010$). Dynamic attention weighting over patch tokens provides a modest empirical advantage by focusing on localized sound bursts.
     \item \textbf{Answer to RQ3 (Noise Robustness \& Acoustic Augmentation):} Undefended Transformers suffer severe collapse under out-of-distribution acoustic room noise (falling by $59.7\%$ relative mAP to $0.2040$ at $-5\text{ dB}$ SNR on the ACE benchmark). Our compound acoustic augmentation pipeline (continuous colored noise, Schroeder reverberation, Mixup, and attention pooling) establishes strong acoustic resilience, achieving $0.3182$ mAP at $-5\text{ dB}$ ($+56.0\%$ relative gain, $+0.1142$ absolute mAP over baseline ViT-Tiny, and $+49.9\%$ over the matched attention-pool model) and boosting clean evaluation to $0.5303$ mAP without external noise data.
-    \item \textbf{Answer to RQ4 (Augmentation Synergy \& Threshold Calibration):} On held-out clean evaluation, isolated spectral masking provides modest benefit ($+1.03$ points mAP for SpecAugment over baseline), while standalone Mixup delivers substantial regularization ($+2.55$ points mAP to $0.5124$, $+2.20$ points Top-1 hit to $75.97\%$). Heavy compound augmentation induces tail-class recall compression under uncalibrated $\tau=0.50$, which is effectively mitigated by lowering decision thresholds to $\tau \in [0.20, 0.25]$ (recovering Macro-F1 by $+4.4$ to $+8.4$ points across models).
+    \item \textbf{Answer to RQ4 (Augmentation Synergy \& Threshold Calibration):} On held-out clean evaluation, isolated spectral masking provides modest benefit ($+1.03$ points mAP for SpecAugment over baseline), while standalone Mixup delivers substantial regularization ($+2.55$ points mAP to $0.5124$, $+2.20$ points Top-1 hit to $75.97\%$). Operating under default uncalibrated decision thresholds ($\tau=0.50$) leads to severe tail-class recall compression (with Full Augmentation exhibiting the lowest Macro-F1 at $0.3974$ vs. $0.4378$ for baseline), which is effectively resolved by lowering decision thresholds to $\tau \in [0.20, 0.25]$ (recovering Macro-F1 by $+4.4$ to $+8.4$ points across models).
 \end{itemize}
 
 % =========================================================================
@@ -568,31 +569,32 @@ Table~\ref{tab:run-configs} lists the exact training flags for each augmentation
 \caption{Training Flags for Each Model Run.
   FM = \texttt{--freq-mask}, TM = \texttt{--time-mask}, MX = \texttt{--mixup-prob},
   TS = \texttt{--time-shift}, NL = \texttt{--noise-level},
-  CN = \texttt{--colored-noise-prob}, RV = \texttt{--reverb-prob}.}
+  CN = \texttt{--colored-noise-prob}, RV = \texttt{--reverb-prob},
+  CB = \texttt{--class-balanced} (DistributedWeightedSampler).}
 \label{tab:run-configs}
 \vspace{2mm}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lcccccccc}
+\begin{tabular}{lccccccccc}
 \toprule
-\textbf{Run Configuration} & \textbf{Pooling Head} & \textbf{FM} & \textbf{TM} & \textbf{MX} & \textbf{TS} & \textbf{NL} & \textbf{CN} & \textbf{RV} \\
+\textbf{Run Configuration} & \textbf{Pooling Head} & \textbf{FM} & \textbf{TM} & \textbf{MX} & \textbf{TS} & \textbf{NL} & \textbf{CN} & \textbf{RV} & \textbf{CB} \\
 \midrule
-\texttt{no\_aug} (Ablation)        & Dual-Token & 0  & 0   & 0.0 & 0  & 0.00 & 0.0 & 0.0 \\
-\texttt{time\_mask} (Ablation)     & Dual-Token & 0  & 192 & 0.0 & 0  & 0.00 & 0.0 & 0.0 \\
-\texttt{freq\_mask} (Ablation)     & Dual-Token & 48 & 0   & 0.0 & 0  & 0.00 & 0.0 & 0.0 \\
-\texttt{time\_freq\_mask} (Ablation) & Dual-Token & 48 & 192 & 0.0 & 0  & 0.00 & 0.0 & 0.0 \\
-\texttt{mixup} (Ablation)          & Dual-Token & 0  & 0   & 0.5 & 0  & 0.00 & 0.0 & 0.0 \\
-\texttt{full} (Ablation)           & Dual-Token & 48 & 192 & 0.5 & 0  & 0.00 & 0.0 & 0.0 \\
+\texttt{no\_aug} (Ablation)        & Dual-Token & 0  & 0   & 0.0 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
+\texttt{time\_mask} (Ablation)     & Dual-Token & 0  & 192 & 0.0 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
+\texttt{freq\_mask} (Ablation)     & Dual-Token & 48 & 0   & 0.0 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
+\texttt{time\_freq\_mask} (Ablation) & Dual-Token & 48 & 192 & 0.0 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
+\texttt{mixup} (Ablation)          & Dual-Token & 0  & 0   & 0.5 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
+\texttt{full} (Ablation)           & Dual-Token & 48 & 192 & 0.5 & 0  & 0.00 & 0.0 & 0.0 & $\times$ \\
 \midrule
-CNN Baselines (ResNet, EfficientNet) & Standard GAP & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
-Baseline ViT-Tiny (Standard AST)   & Dual-Token & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
-ViT-Small (Standard AST)           & Dual-Token & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
+CNN Baselines (ResNet, EfficientNet) & Standard GAP & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
+Baseline ViT-Tiny (Standard AST)   & Dual-Token & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
+ViT-Small (Standard AST)           & Dual-Token & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
 \midrule
-GAP Pooling (End-to-End Ablation)  & GAP        & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
-GAP+Max Pooling (End-to-End)       & GAP + Max  & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
-Attn-Pool ViT-Tiny (No DSP)        & Attention  & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 \\
+GAP Pooling (End-to-End Ablation)  & GAP        & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
+GAP+Max Pooling (End-to-End)       & GAP + Max  & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
+Attn-Pool ViT-Tiny (No DSP)        & Attention  & 48 & 192 & 0.5 & 10 & 0.05 & 0.0 & 0.0 & $\times$ \\
 \midrule
-Dual-Token (+DSP) (Ablation)       & Dual-Token & 0  & 0   & 0.5 & 10 & 0.05 & 0.5 & 0.3 \\
-Proposed Robust ViT-Tiny (+DSP)    & Attention  & 0  & 0   & 0.5 & 10 & 0.05 & 0.5 & 0.3 \\
+Dual-Token (+DSP) (Ablation)       & Dual-Token & 0  & 0   & 0.5 & 10 & 0.05 & 0.5 & 0.3 & $\checkmark$ \\
+Proposed Robust ViT-Tiny (+DSP)    & Attention  & 0  & 0   & 0.5 & 10 & 0.05 & 0.5 & 0.3 & $\checkmark$ \\
 \bottomrule
 \end{tabular}
 }
